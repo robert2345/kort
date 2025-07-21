@@ -35,6 +35,7 @@ enum action {
 	ACTION_PLAY_FROM_PILE_TO_KINGS,
 	ACTION_PLAY_FROM_ACES_TO_KINGS,
 	ACTION_PLAY_FROM_KINGS_TO_ACES,
+	ACTION_SWAP_CARDS_IN_HAND,
 	ACTION_NBR_OF
 };
 
@@ -47,4 +48,15 @@ struct player_action {
 
 bool cards_are_equal(struct card a, struct card b);
 
-
+static char* action_to_string[ACTION_NBR_OF] = 
+{
+	[ACTION_NONE] = "No action.",
+	[ACTION_PUT_HAND_DOWN] = "Put hand down.",
+	[ACTION_PLAY_FROM_HAND_TO_ACES] = "Play from hand to ace-pile.",
+	[ACTION_PLAY_FROM_HAND_TO_KINGS] = "Play from hand to king-pile.",
+	[ACTION_PLAY_FROM_PILE_TO_ACES] = "Play from top of pile to ace-pile.",
+	[ACTION_PLAY_FROM_PILE_TO_KINGS] = "Play from top of pile to king-pile.",
+	[ACTION_PLAY_FROM_ACES_TO_KINGS] = "Move from aces to kings.",
+	[ACTION_PLAY_FROM_KINGS_TO_ACES] = "Move from kings to aces.",
+	[ACTION_SWAP_CARDS_IN_HAND] = "Swap two cards on hands to re-order it"
+};

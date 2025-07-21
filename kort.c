@@ -91,8 +91,10 @@ static struct card * put_card_at_index(struct ddeck *pile, struct card *card_p, 
 
 static struct card *put_card_first(struct ddeck *pile, struct card *card_p)
 {
-	if (pile->cards[MAX_CARDS-1])
+	if (pile->cards[MAX_CARDS-1]) {
+		printf("Pile is full?");
 		return card_p;
+	}
 
 	for (int i = MAX_CARDS-1; i>0; i --){
 		pile->cards[i] = pile->cards[i-1];
@@ -115,6 +117,16 @@ static void print_pile (struct ddeck *pile)
 }
 
 
+static void swap_indexes(struct ddeck *pile, int i1, int i2)
+{
+	struct card * card_p;
+	if (!pile->cards[i1] || !pile->cards[i2])
+		return;
+	card_p = pile->cards[i1];
+	pile->cards[i1]  = pile->cards[i2] ;
+	pile->cards[i2]  = card_p;
+}
+
 
 static void init_game()
 {
@@ -125,7 +137,6 @@ static void init_game()
 		for (char color = 0; color < 4; color++) {
 			for  (char value = 0; value < NBR_VALUES; value++) {
 				card_p = malloc(sizeof(struct card));
-
 				card_p->value = value;
 				card_p->color = color;
 				put_card_last(&init_pile,card_p);
@@ -185,39 +196,35 @@ static void init_game()
 	//}
 }
 
-struct card * play_kings(struct card *card_p, int to_index)
+struct card * play_kings(struct card *card_p)
 {
 	int color  = card_p->color;
 	int value = card_p->value;
 	struct card *king_p;
-	if (color != to_index)
-		return card_p;
-	king_p = get_first_card(&kings[to_index]);
+	king_p = get_first_card(&kings[color]);
 	if (!king_p)
-	       return value == 12 ? put_card_first(&kings[to_index], card_p) : card_p;
+	       return value == (NBR_VALUES-1) ? put_card_first(&kings[color], card_p) : card_p;
 
-	put_card_first(&kings[to_index], king_p);
+	put_card_first(&kings[color], king_p);
 	if ((king_p->value - 1) == value)
-		return put_card_first(&kings[to_index], card_p);
+		return put_card_first(&kings[color], card_p);
 	return card_p;
 }
 
 
-struct card * play_aces(struct card *card_p, int to_index)
+struct card * play_aces(struct card *card_p)
 {
 	struct card *ace_p;
 	int color  = card_p->color;
 	int value = card_p->value;
-	if (color != to_index)
-		return card_p;
-	ace_p = get_first_card(&aces[to_index]);
+	ace_p = get_first_card(&aces[color]);
 	if (!ace_p) {
-		return value == 0 ? put_card_first(&aces[to_index], card_p) : card_p;
+		return value == 0 ? put_card_first(&aces[color], card_p) : card_p;
 	}
 
-	put_card_first(&aces[to_index], ace_p);
+	put_card_first(&aces[color], ace_p);
 	if ((ace_p->value +1) == value) {
-		return put_card_first(&aces[to_index], card_p);
+		return put_card_first(&aces[color], card_p);
 
 	}
 	return card_p;
@@ -233,7 +240,6 @@ int main(int argc, char **argv) {
 
 	// init game
 	init_game();
-	printf("init done\n");
 
 
 	while (card_p = get_last_card(&draw_pile))
@@ -241,7 +247,6 @@ int main(int argc, char **argv) {
 		state.current_pile = card_p->value;
 		put_card_first(&piles[state.current_pile], card_p);
 		pa.action = ACTION_NONE;
-		printf("The new pile is %d\n",state.current_pile);
 		while (pa.action != ACTION_PUT_HAND_DOWN) {
 			state.hand = &piles[card_p->value];
 			for (int i = 0 ; i < 4; i++) {
@@ -265,7 +270,7 @@ int main(int argc, char **argv) {
 				case ACTION_PLAY_FROM_PILE_TO_ACES:
 					tmp_card_p = get_first_card(&piles[pa.from_index]);
 					if (!tmp_card_p) break;
-					if (tmp_card_p = play_aces(tmp_card_p, pa.to_index))
+					if (tmp_card_p = play_aces(tmp_card_p))
 					{
 						//failed to play this card. Put back
 						put_card_first(&piles[pa.from_index], tmp_card_p);
@@ -274,7 +279,7 @@ int main(int argc, char **argv) {
 				case ACTION_PLAY_FROM_PILE_TO_KINGS:
 					tmp_card_p = get_first_card(&piles[pa.from_index]);
 					if (!tmp_card_p) break;
-					if (tmp_card_p = play_kings(tmp_card_p, pa.to_index))
+					if (tmp_card_p = play_kings(tmp_card_p))
 					{
 						//failed to play this card. Put back
 						put_card_first(&piles[pa.from_index], tmp_card_p);
@@ -283,28 +288,31 @@ int main(int argc, char **argv) {
 				case ACTION_PLAY_FROM_HAND_TO_ACES:
 					if (tmp_card_p = get_from_index(&piles[state.current_pile], pa.from_index))
 					{
-						if (tmp_card_p = play_aces(tmp_card_p, pa.to_index)) {
+						if (tmp_card_p = play_aces(tmp_card_p)) {
 							tmp_card_p = put_card_at_index(&piles[state.current_pile], tmp_card_p,  pa.from_index);
 							if (tmp_card_p)
 								printf("Failed to add back the failed play to the pile\n");
 						}
-
-
 
 					}
 					break;
 				case ACTION_PLAY_FROM_HAND_TO_KINGS:
+					printf("Play from hand to kings\n");
 					if (tmp_card_p = get_from_index(&piles[state.current_pile], pa.from_index))
 					{
-						if (tmp_card_p = play_kings(tmp_card_p, pa.to_index)) {
+						if (tmp_card_p = play_kings(tmp_card_p)) {
+							printf("Failed to play to kings\n");
 							tmp_card_p = put_card_at_index(&piles[state.current_pile], tmp_card_p,  pa.from_index);
 							if (tmp_card_p)
 								printf("Failed to add back the failed play to the pile\n");
 						}
+					} else {
 
-
-
+						printf("Unable to draw card");
 					}
+					break;
+				case ACTION_SWAP_CARDS_IN_HAND:
+					swap_indexes(&piles[state.current_pile], pa.from_index, pa.to_index);
 					break;
 				case ACTION_PLAY_FROM_ACES_TO_KINGS:
 				case ACTION_PLAY_FROM_KINGS_TO_ACES:
@@ -314,10 +322,7 @@ int main(int argc, char **argv) {
 					printf("INVALID ACTION\n");
 					exit(-1);
 			}
-
 		}
 	}
-
 	return 0;
-
 }
