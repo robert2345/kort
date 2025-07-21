@@ -185,7 +185,7 @@ static void init_game()
 	//}
 }
 
-struct card * play_king(struct card *card_p, int to_index)
+struct card * play_kings(struct card *card_p, int to_index)
 {
 	int color  = card_p->color;
 	int value = card_p->value;
@@ -203,27 +203,22 @@ struct card * play_king(struct card *card_p, int to_index)
 }
 
 
-struct card * play(struct card *card_p, int to_index)
+struct card * play_aces(struct card *card_p, int to_index)
 {
 	struct card *ace_p;
-	if (to_index >3) {
-		return play_king(card_p, to_index % 4);
-	} else
-	{
-		int color  = card_p->color;
-		int value = card_p->value;
-		if (color != to_index)
-			return card_p;
-		ace_p = get_first_card(&aces[to_index]);
-		if (!ace_p) {
-			return value == 0 ? put_card_first(&aces[to_index], card_p) : card_p;
-		}
+	int color  = card_p->color;
+	int value = card_p->value;
+	if (color != to_index)
+		return card_p;
+	ace_p = get_first_card(&aces[to_index]);
+	if (!ace_p) {
+		return value == 0 ? put_card_first(&aces[to_index], card_p) : card_p;
+	}
 
-		put_card_first(&aces[to_index], ace_p);
-		if ((ace_p->value +1) == value) {
-			return put_card_first(&aces[to_index], card_p);
+	put_card_first(&aces[to_index], ace_p);
+	if ((ace_p->value +1) == value) {
+		return put_card_first(&aces[to_index], card_p);
 
-		}
 	}
 	return card_p;
 }
@@ -234,6 +229,7 @@ int main(int argc, char **argv) {
 	struct card *card_p;
 	struct player_action pa;
 	struct state state = {0};
+	struct card *tmp_card_p;
 
 	// init game
 	init_game();
@@ -249,7 +245,6 @@ int main(int argc, char **argv) {
 		while (pa.action != ACTION_PUT_HAND_DOWN) {
 			state.hand = &piles[card_p->value];
 			for (int i = 0 ; i < 4; i++) {
-				struct card *tmp_card_p;
 				tmp_card_p = aces[i].cards[0];
 				state.top_of_aces[i] = tmp_card_p ? *tmp_card_p: no_card;
 
@@ -258,7 +253,6 @@ int main(int argc, char **argv) {
 
 			}
 			for (int i = 0 ; i < NBR_VALUES; i++) {
-				struct card *tmp_card_p;
 				tmp_card_p = piles[i].cards[0];
 				state.top_of_piles[i] = tmp_card_p ? *tmp_card_p: no_card;
 			}
@@ -268,20 +262,28 @@ int main(int argc, char **argv) {
 			printf("Player action %d, from %d, to %d\n", pa.action, pa.from_index, pa.to_index);
 			switch (pa.action)
 			{
-				case ACTION_PLAY_FROM_PILE:
-					struct card *tmp_card_p;
+				case ACTION_PLAY_FROM_PILE_TO_ACES:
 					tmp_card_p = get_first_card(&piles[pa.from_index]);
 					if (!tmp_card_p) break;
-					if (tmp_card_p = play(tmp_card_p, pa.to_index))
+					if (tmp_card_p = play_aces(tmp_card_p, pa.to_index))
 					{
 						//failed to play this card. Put back
 						put_card_first(&piles[pa.from_index], tmp_card_p);
 					}
 					break;
-				case ACTION_PLAY_FROM_HAND:
+				case ACTION_PLAY_FROM_PILE_TO_KINGS:
+					tmp_card_p = get_first_card(&piles[pa.from_index]);
+					if (!tmp_card_p) break;
+					if (tmp_card_p = play_kings(tmp_card_p, pa.to_index))
+					{
+						//failed to play this card. Put back
+						put_card_first(&piles[pa.from_index], tmp_card_p);
+					}
+					break;
+				case ACTION_PLAY_FROM_HAND_TO_ACES:
 					if (tmp_card_p = get_from_index(&piles[state.current_pile], pa.from_index))
 					{
-						if (tmp_card_p = play(tmp_card_p, pa.to_index)) {
+						if (tmp_card_p = play_aces(tmp_card_p, pa.to_index)) {
 							tmp_card_p = put_card_at_index(&piles[state.current_pile], tmp_card_p,  pa.from_index);
 							if (tmp_card_p)
 								printf("Failed to add back the failed play to the pile\n");
@@ -291,6 +293,21 @@ int main(int argc, char **argv) {
 
 					}
 					break;
+				case ACTION_PLAY_FROM_HAND_TO_KINGS:
+					if (tmp_card_p = get_from_index(&piles[state.current_pile], pa.from_index))
+					{
+						if (tmp_card_p = play_kings(tmp_card_p, pa.to_index)) {
+							tmp_card_p = put_card_at_index(&piles[state.current_pile], tmp_card_p,  pa.from_index);
+							if (tmp_card_p)
+								printf("Failed to add back the failed play to the pile\n");
+						}
+
+
+
+					}
+					break;
+				case ACTION_PLAY_FROM_ACES_TO_KINGS:
+				case ACTION_PLAY_FROM_KINGS_TO_ACES:
 				case ACTION_PUT_HAND_DOWN:
 					break;
 				default:

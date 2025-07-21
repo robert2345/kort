@@ -29,13 +29,13 @@ static const struct card no_card = {.value = -1, .color = -1};
 enum action {
 	ACTION_NONE = 0,
 	ACTION_PUT_HAND_DOWN,
-	ACTION_PLAY_FROM_HAND,
-	ACTION_PLAY_FROM_PILE,
+	ACTION_PLAY_FROM_HAND_TO_ACES,
+	ACTION_PLAY_FROM_HAND_TO_KINGS,
+	ACTION_PLAY_FROM_PILE_TO_ACES,
+	ACTION_PLAY_FROM_PILE_TO_KINGS,
+	ACTION_PLAY_FROM_ACES_TO_KINGS,
+	ACTION_PLAY_FROM_KINGS_TO_ACES,
 	ACTION_NBR_OF
-	//actions:
-	//swap-places in hand
-	//play from hand
-	//play from pile x
 };
 
 struct player_action {

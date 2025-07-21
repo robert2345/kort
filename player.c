@@ -23,7 +23,7 @@ static void print_state(struct state state)
 {
 	struct card *card_p;
 	int i;
-	printf("Aces: ");
+	printf("\nAces: ");
 	for (i = 0; i < 4; i++)
 	{
 		if (!cards_are_equal(state.top_of_aces[i], no_card))
@@ -57,7 +57,7 @@ static void print_state(struct state state)
 
 	}
 
-	printf("Hand:\n");
+	printf("\nHand:\n");
 	i = 0;
 	while (card_p = state.hand->cards[i++])
 	{
@@ -76,7 +76,7 @@ void player_prompt_action(struct state state, struct player_action *pa)
 		hand_sub_index =0;
 	}
 	if (card_p = state.hand->cards[hand_sub_index]) {
-		pa->action = ACTION_PLAY_FROM_HAND;
+		pa->action = ACTION_PLAY_FROM_HAND_TO_KINGS;
 		pa->from_index = hand_sub_index++;
 		pa->to_index = card_p->color;
 		return;
