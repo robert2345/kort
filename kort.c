@@ -148,6 +148,7 @@ static void init_game()
 
 
 	// blanda init_pile
+	srand((unsigned)clock());
 	for (i = 0; i < 4 * MAX_CARDS; i++)
 	{
 		int pos1 = rand()%MAX_CARDS;
