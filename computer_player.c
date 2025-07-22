@@ -152,6 +152,7 @@ static int compare_card_weights(const void *p, const void *q) {
 
 static void calc_card_weight(struct state state, struct card_weight *card_weight)
 {
+	int piles_weight = 0; // if the thing on hand is already top of other pile, downprio
 	int king_weight = 0;
 	int ace_weight = 0;
 	int weight = 0;
@@ -169,9 +170,21 @@ static void calc_card_weight(struct state state, struct card_weight *card_weight
 		ace_weight = (value - ace_value);
 	else
 		ace_weight = 14;
+
+	for (int i = 0; i < NBR_VALUES; i ++)
+	{
+		if (i == state.current_pile) // no need to compare against ourself if we are top of hand-pile
+			continue;
+		if (cards_are_equal(state.top_of_piles[i], *card_p)) {
+			piles_weight = 2;
+			break;
+		}
+	}
+		
+
 	//printf("card value: %d, king value %d, ace value %d, king_weight %d, ace_weight %d\n", value, king_value, ace_value, king_weight, ace_weight);
 	; 
-	card_weight->weight = king_weight+ace_weight + 3*MIN(king_weight, ace_weight);
+	card_weight->weight = king_weight+ace_weight + 3*MIN(king_weight, ace_weight) + piles_weight;
 
 }
 
