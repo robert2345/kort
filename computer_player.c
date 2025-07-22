@@ -240,6 +240,36 @@ static bool try_play_pile(struct state state, struct player_action *pa)
 	return false;
 
 }
+
+static bool try_play_hand(struct state state, struct player_action *pa)
+{
+	int i;
+	int hand_size = calc_hand_size(state);
+	for (i = 0; i < hand_size; i ++)
+	{
+		int color = state.hand->cards[i]->color;
+		int value = state.hand->cards[i]->value;
+		//if we can play to aces
+		printf("Value %d, king %d, ace %d\n", value, state.top_of_kings[color].value, state.top_of_aces[color].value);
+		if ((cards_are_equal(state.top_of_aces[color], no_card) && value == 0) || ((state.top_of_aces[color].value + 1) == value))
+		{
+			pa->action = ACTION_PLAY_FROM_HAND_TO_ACES;
+			pa->from_index = i;
+			return true;
+		}
+		//if we can play to kings
+		if ((cards_are_equal(state.top_of_kings[color], no_card) && value == 12) || ((state.top_of_kings[color].value - 1) == value))
+		{
+			pa->action = ACTION_PLAY_FROM_HAND_TO_KINGS;
+			pa->from_index = i;
+			return true;
+		}
+	}
+	pa->action = ACTION_NONE;
+	return false;
+
+}
+
 bool piles_are_equal(struct state s0, struct state s1)
 {
 	for (int i = 0; i < NBR_VALUES; i ++)
@@ -296,6 +326,11 @@ void player_prompt_action(struct state state, struct player_action *pa)
 		//try play pile
 		//printf("Trying to play\n");
 		if (try_play_pile(state, pa)) {
+			number_of_reorders_since_last_state_change = 0;
+			consequent_reorders=0;
+			return;
+		}
+		if (try_play_hand(state, pa)) {
 			number_of_reorders_since_last_state_change = 0;
 			consequent_reorders=0;
 			return;

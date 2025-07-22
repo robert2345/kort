@@ -284,7 +284,7 @@ static bool try_play_pile(struct state state, struct player_action *pa)
 		int color = state.top_of_piles[i].color;
 		int value = state.top_of_piles[i].value;
 		//if we can play to aces
-		printf("Value %d, king %d, ace %d\n", value, state.top_of_kings[color].value, state.top_of_aces[color].value);
+		//printf("Value %d, king %d, ace %d\n", value, state.top_of_kings[color].value, state.top_of_aces[color].value);
 		if ((cards_are_equal(state.top_of_aces[color], no_card) && value == 0) || ((state.top_of_aces[color].value + 1) == value))
 		{
 			pa->action = ACTION_PLAY_FROM_PILE_TO_ACES;
@@ -303,6 +303,36 @@ static bool try_play_pile(struct state state, struct player_action *pa)
 	return false;
 
 }
+
+static bool try_play_hand(struct state state, struct player_action *pa)
+{
+	int i;
+	int hand_size = calc_hand_size(state);
+	for (i = 0; i < hand_size; i ++)
+	{
+		int color = state.hand->cards[i]->color;
+		int value = state.hand->cards[i]->value;
+		//if we can play to aces
+		printf("Value %d, king %d, ace %d\n", value, state.top_of_kings[color].value, state.top_of_aces[color].value);
+		if ((cards_are_equal(state.top_of_aces[color], no_card) && value == 0) || ((state.top_of_aces[color].value + 1) == value))
+		{
+			pa->action = ACTION_PLAY_FROM_HAND_TO_ACES;
+			pa->from_index = i;
+			return true;
+		}
+		//if we can play to kings
+		if ((cards_are_equal(state.top_of_kings[color], no_card) && value == 12) || ((state.top_of_kings[color].value - 1) == value))
+		{
+			pa->action = ACTION_PLAY_FROM_HAND_TO_KINGS;
+			pa->from_index = i;
+			return true;
+		}
+	}
+	pa->action = ACTION_NONE;
+	return false;
+
+}
+
 
 void player_prompt_action(struct state state, struct player_action *pa)
 {
@@ -326,10 +356,10 @@ void player_prompt_action(struct state state, struct player_action *pa)
 	if (pa->action == ACTION_CUSTOM_2)
 	{
 		//Custom automatic play action. Player defined.
-		//try play pile
 		if (try_play_pile(state, pa))
 			return;
-		//try play from hand
+		if (try_play_hand(state, pa))
+			return;
 
 		return;
 	}
