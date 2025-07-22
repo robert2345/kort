@@ -48,6 +48,7 @@ struct player_action {
 	char from_index;
 	char to_index;
 	int new_hand_order[MAX_CARDS];
+	int count;
 };
 
 

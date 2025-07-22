@@ -151,7 +151,11 @@ static int prompt_action()
 	printf(" %d) %s\n", i++, "Automatic hand reordring.");
 	printf(" %d) %s\n", i++, "Auto-play.");
 	printf("Which action do you want to take?\n");
-	scanf("%s", s);
+	//if (!gets(s));
+	//	return ACTION_CUSTOM_2;
+	gets(s);
+	if (s[0] == '\0')
+		return ACTION_CUSTOM_2;
 	enum action a = atoi(s);
 	return a;
 
@@ -334,6 +338,27 @@ static bool try_play_hand(struct state state, struct player_action *pa)
 }
 
 
+static void identify_king_ace_transfer(struct state state)
+{
+	for (int i = 0; i < 4; i++)
+	{
+		if (state.top_of_kings[i].value == (1+state.top_of_aces[i].value)) {
+			printf("WARNING! it is possible to move cards between aces and kings piles!\n");
+			getchar();
+		}
+	}
+
+}
+
+static int prompt_count(struct state state, int max_count)
+{
+	char s[100];
+	printf("How many cards to move: 0 to %d?\n", max_count);
+	scanf("%s", s);
+	int i= atoi(s);
+	return i;
+}
+
 void player_prompt_action(struct state state, struct player_action *pa)
 {
 	struct card *card_p;
@@ -341,7 +366,9 @@ void player_prompt_action(struct state state, struct player_action *pa)
 
 	print_state(state);
 
+	identify_king_ace_transfer(state);
 	pa->action = prompt_action();
+	printf("Action %d\n", pa->action);
 
 	if (pa->action == ACTION_CUSTOM_1)
 	{
@@ -388,6 +415,12 @@ void player_prompt_action(struct state state, struct player_action *pa)
 		case ACTION_SWAP_CARDS_IN_HAND:
 			pa->from_index = prompt_from(state, hand_size);
 			pa->to_index = prompt_to(state, hand_size);
+			break;
+		case ACTION_PLAY_FROM_ACES_TO_KINGS:
+			pa->from_index = prompt_from(state, 4);
+			pa->count = prompt_count(state, state.top_of_aces[pa->from_index].value+1);
+			break;
+		case ACTION_PLAY_FROM_KINGS_TO_ACES:
 			break;
 		case ACTION_REORDER_HAND:
 			if (!prompt_new_hand_order(state, pa->new_hand_order)) { pa->action = ACTION_NONE; }

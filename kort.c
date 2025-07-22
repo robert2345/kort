@@ -299,6 +299,19 @@ out:
 	//getchar();
 }
 
+static void move_from_aces_to_kings(int color, int count)
+{
+	for (int i = 0 ; i < count; i++)
+	{
+		struct card *card_p = get_first_card(&aces[color]);
+		if (!card_p)
+			break;
+		// check that there is indeed one step between the cards and that it the put succeeds
+		if ((card_p->value +1 != kings[color].cards[0]->value) || 
+		    (card_p = put_card_first(&kings[color], card_p)))
+			put_card_first(&aces[color], card_p); // if something fails, put card back
+	}
+}
 
 int main(int argc, char **argv) {
 
@@ -312,7 +325,7 @@ int main(int argc, char **argv) {
 		if (argv[1][1] == 's');
 		{
 			printf("Gathering statistics on many runs!\n");
-			runs_left = 10000;
+			runs_left = 1000;
 		}
 
 	}
@@ -400,6 +413,8 @@ int main(int argc, char **argv) {
 					case ACTION_NONE:
 						break;
 					case ACTION_PLAY_FROM_ACES_TO_KINGS:
+						move_from_aces_to_kings(pa.from_index, pa.count);
+						break;
 					case ACTION_PLAY_FROM_KINGS_TO_ACES:
 					case ACTION_PUT_HAND_DOWN:
 						break;
