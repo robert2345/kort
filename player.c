@@ -313,7 +313,7 @@ static bool try_play_hand(struct state state, struct player_action *pa)
 		int color = state.hand->cards[i]->color;
 		int value = state.hand->cards[i]->value;
 		//if we can play to aces
-		printf("Value %d, king %d, ace %d\n", value, state.top_of_kings[color].value, state.top_of_aces[color].value);
+		//printf("Value %d, king %d, ace %d\n", value, state.top_of_kings[color].value, state.top_of_aces[color].value);
 		if ((cards_are_equal(state.top_of_aces[color], no_card) && value == 0) || ((state.top_of_aces[color].value + 1) == value))
 		{
 			pa->action = ACTION_PLAY_FROM_HAND_TO_ACES;
