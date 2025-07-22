@@ -313,6 +313,20 @@ static void move_from_aces_to_kings(int color, int count)
 	}
 }
 
+static void move_from_kings_to_aces(int color, int count)
+{
+	for (int i = 0 ; i < count; i++)
+	{
+		struct card *card_p = get_first_card(&kings[color]);
+		if (!card_p)
+			break;
+		// check that there is indeed one step between the cards and that it the put succeeds
+		if ((card_p->value -1 != aces[color].cards[0]->value) || 
+		    (card_p = put_card_first(&aces[color], card_p)))
+			put_card_first(&kings[color], card_p); // if something fails, put card back
+	}
+}
+
 int main(int argc, char **argv) {
 
 	struct card *card_p;
@@ -361,6 +375,7 @@ int main(int argc, char **argv) {
 				switch (pa.action)
 				{
 					case ACTION_PLAY_FROM_PILE_TO_ACES:
+						if (pa.from_index >= NBR_VALUES) break;
 						tmp_card_p = get_first_card(&piles[pa.from_index]);
 						if (!tmp_card_p) break;
 						if (tmp_card_p = play_aces(tmp_card_p))
@@ -370,6 +385,7 @@ int main(int argc, char **argv) {
 						}
 						break;
 					case ACTION_PLAY_FROM_PILE_TO_KINGS:
+						if (pa.from_index >= NBR_VALUES) break;
 						tmp_card_p = get_first_card(&piles[pa.from_index]);
 						if (!tmp_card_p) break;
 						if (tmp_card_p = play_kings(tmp_card_p))
@@ -379,7 +395,7 @@ int main(int argc, char **argv) {
 						}
 						break;
 					case ACTION_PLAY_FROM_HAND_TO_ACES:
-						if (tmp_card_p = get_from_index(&piles[state.current_pile], pa.from_index))
+						if (pa.from_index < 3 && (tmp_card_p = get_from_index(&piles[state.current_pile], pa.from_index)))
 						{
 							if (tmp_card_p = play_aces(tmp_card_p)) {
 								tmp_card_p = put_card_at_index(&piles[state.current_pile], tmp_card_p,  pa.from_index);
@@ -391,7 +407,7 @@ int main(int argc, char **argv) {
 						break;
 					case ACTION_PLAY_FROM_HAND_TO_KINGS:
 						printf("Play from hand to kings\n");
-						if (tmp_card_p = get_from_index(&piles[state.current_pile], pa.from_index))
+						if (pa.from_index < 3 && (tmp_card_p = get_from_index(&piles[state.current_pile], pa.from_index)))
 						{
 							if (tmp_card_p = play_kings(tmp_card_p)) {
 								printf("Failed to play to kings\n");
@@ -416,6 +432,8 @@ int main(int argc, char **argv) {
 						move_from_aces_to_kings(pa.from_index, pa.count);
 						break;
 					case ACTION_PLAY_FROM_KINGS_TO_ACES:
+						move_from_kings_to_aces(pa.from_index, pa.count);
+						break;
 					case ACTION_PUT_HAND_DOWN:
 						break;
 					default:

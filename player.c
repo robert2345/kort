@@ -343,8 +343,13 @@ static void identify_king_ace_transfer(struct state state)
 	for (int i = 0; i < 4; i++)
 	{
 		if (state.top_of_kings[i].value == (1+state.top_of_aces[i].value)) {
-			printf("WARNING! it is possible to move cards between aces and kings piles!\n");
-			getchar();
+			char s[100];
+			do {
+				printf("WARNING! it is possible to move cards between aces and kings piles! Press 'o' to proceed.\n");
+				gets(s);
+			} while (s[0] != 'o');
+			break;
+
 		}
 	}
 
@@ -385,6 +390,7 @@ void player_prompt_action(struct state state, struct player_action *pa)
 		//Custom automatic play action. Player defined.
 		if (try_play_pile(state, pa))
 			return;
+		// try to sneak in something by moving cards between aces and kings here
 		if (try_play_hand(state, pa))
 			return;
 
@@ -421,6 +427,10 @@ void player_prompt_action(struct state state, struct player_action *pa)
 			pa->count = prompt_count(state, state.top_of_aces[pa->from_index].value+1);
 			break;
 		case ACTION_PLAY_FROM_KINGS_TO_ACES:
+			pa->from_index = prompt_from(state, 4);
+			int top_value = state.top_of_kings[pa->from_index].value;
+			if (top_value == -1) top_value = NBR_VALUES;
+			pa->count = prompt_count(state, NBR_VALUES-top_value);
 			break;
 		case ACTION_REORDER_HAND:
 			if (!prompt_new_hand_order(state, pa->new_hand_order)) { pa->action = ACTION_NONE; }
