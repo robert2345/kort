@@ -254,6 +254,21 @@ static void reorder_hand(struct ddeck *pile, int *new_hand_order)
 
 }
 
+static void print_results()
+{
+	printf("\e[1;1H\e[2J");
+	printf("<<<<<    Game over!    >>>>>\n\n");
+	for (int i = 0; i < NBR_VALUES; i++) {
+		if (piles[i].cards[0]){
+			printf("         You LOST!\n\n");
+			exit(0);
+		}
+	}
+
+	printf("         You WON!\n\n");
+
+}
+
 
 int main(int argc, char **argv) {
 
@@ -288,7 +303,7 @@ int main(int argc, char **argv) {
 
 			player_prompt_action(state, &pa);
 
-			//printf("Player action %d, from %d, to %d\n", pa.action, pa.from_index, pa.to_index);
+			printf("Player action %d, from %d, to %d\n", pa.action, pa.from_index, pa.to_index);
 			switch (pa.action)
 			{
 				case ACTION_PLAY_FROM_PILE_TO_ACES:
@@ -341,6 +356,8 @@ int main(int argc, char **argv) {
 				case ACTION_REORDER_HAND:
 					reorder_hand(state.hand, pa.new_hand_order);
 					break;
+				case ACTION_NONE:
+					break;
 				case ACTION_PLAY_FROM_ACES_TO_KINGS:
 				case ACTION_PLAY_FROM_KINGS_TO_ACES:
 				case ACTION_PUT_HAND_DOWN:
@@ -351,5 +368,6 @@ int main(int argc, char **argv) {
 			}
 		}
 	}
+	print_results();
 	return 0;
 }
