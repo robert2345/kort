@@ -257,7 +257,6 @@ static void reorder_hand(struct ddeck *pile, int *new_hand_order)
 
 static void print_results()
 {
-	printf("\e[1;1H\e[2J");
 	printf("<<<<<    Game over!    >>>>>\n\n");
 	for (int i = 0; i < NBR_VALUES; i++) {
 		if (piles[i].cards[0]){
