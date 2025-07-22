@@ -3,6 +3,10 @@
 
 #include "player.h"
 
+static int runs_left = 1;
+static int successes = 0;
+static int failures = 0;
+
 // starthög
 static struct ddeck init_pile;
 
@@ -185,6 +189,27 @@ static void init_game()
 	//print_pile(&draw_pile);
 }
 
+static void clear_game()
+{
+	struct card *card_p;
+	for (int i = 0; i < NBR_VALUES; i++)
+	{
+		while (card_p = get_first_card(&piles[i]))
+			free(card_p);
+	}
+	for (int i = 0; i < 4; i++)
+	{
+		while (card_p = get_first_card(&kings[i]))
+			free(card_p);
+	}
+	for (int i = 0; i < 4; i++)
+	{
+		while (card_p = get_first_card(&aces[i]))
+			free(card_p);
+	}
+
+}
+
 struct card * play_kings(struct card *card_p)
 {
 	int color  = card_p->color;
@@ -257,16 +282,21 @@ static void reorder_hand(struct ddeck *pile, int *new_hand_order)
 
 static void print_results()
 {
-	printf("<<<<<    Game over!    >>>>>\n\n");
+	printf("\n\n<<<<<    Game over!    >>>>>\n\n");
 	for (int i = 0; i < NBR_VALUES; i++) {
 		if (piles[i].cards[0]){
 			printf("         You LOST!\n\n");
-			exit(0);
+			failures++;
+			goto out;
 		}
 	}
 
 	printf("         You WON!\n\n");
+	successes++;
+out:
+	printf("         In all you won %d times and lost %d.\n\n", successes, failures);
 
+	//getchar();
 }
 
 
@@ -277,97 +307,110 @@ int main(int argc, char **argv) {
 	struct state state = {0};
 	struct card *tmp_card_p;
 
-	// init game
-	init_game();
-
-
-	while (card_p = get_last_card(&draw_pile))
+	if (argc > 1)
 	{
-		state.current_pile = card_p->value;
-		put_card_first(&piles[state.current_pile], card_p);
-		pa.action = ACTION_NONE;
-		while (pa.action != ACTION_PUT_HAND_DOWN) {
-			state.hand = &piles[card_p->value];
-			for (int i = 0 ; i < 4; i++) {
-				tmp_card_p = aces[i].cards[0];
-				state.top_of_aces[i] = tmp_card_p ? *tmp_card_p: no_card;
+		if (argv[1][1] == 's');
+		{
+			printf("Gathering statistics on many runs!\n");
+			runs_left = 10000;
+		}
 
-				tmp_card_p = kings[i].cards[0];
-				state.top_of_kings[i] = tmp_card_p ? *tmp_card_p: no_card;
+	}
 
-			}
-			for (int i = 0 ; i < NBR_VALUES; i++) {
-				tmp_card_p = piles[i].cards[0];
-				state.top_of_piles[i] = tmp_card_p ? *tmp_card_p: no_card;
-			}
 
-			player_prompt_action(state, &pa);
+	while (0 <= runs_left--) {
+		// init game
+		init_game();
 
-			printf("Player action %d, from %d, to %d\n", pa.action, pa.from_index, pa.to_index);
-			switch (pa.action)
-			{
-				case ACTION_PLAY_FROM_PILE_TO_ACES:
-					tmp_card_p = get_first_card(&piles[pa.from_index]);
-					if (!tmp_card_p) break;
-					if (tmp_card_p = play_aces(tmp_card_p))
-					{
-						//failed to play this card. Put back
-						put_card_first(&piles[pa.from_index], tmp_card_p);
-					}
-					break;
-				case ACTION_PLAY_FROM_PILE_TO_KINGS:
-					tmp_card_p = get_first_card(&piles[pa.from_index]);
-					if (!tmp_card_p) break;
-					if (tmp_card_p = play_kings(tmp_card_p))
-					{
-						//failed to play this card. Put back
-						put_card_first(&piles[pa.from_index], tmp_card_p);
-					}
-					break;
-				case ACTION_PLAY_FROM_HAND_TO_ACES:
-					if (tmp_card_p = get_from_index(&piles[state.current_pile], pa.from_index))
-					{
-						if (tmp_card_p = play_aces(tmp_card_p)) {
-							tmp_card_p = put_card_at_index(&piles[state.current_pile], tmp_card_p,  pa.from_index);
-							if (tmp_card_p)
-								printf("Failed to add back the failed play to the pile\n");
+		while (card_p = get_last_card(&draw_pile))
+		{
+			state.current_pile = card_p->value;
+			put_card_first(&piles[state.current_pile], card_p);
+			pa.action = ACTION_NONE;
+			while (pa.action != ACTION_PUT_HAND_DOWN) {
+				state.hand = &piles[card_p->value];
+				for (int i = 0 ; i < 4; i++) {
+					tmp_card_p = aces[i].cards[0];
+					state.top_of_aces[i] = tmp_card_p ? *tmp_card_p: no_card;
+
+					tmp_card_p = kings[i].cards[0];
+					state.top_of_kings[i] = tmp_card_p ? *tmp_card_p: no_card;
+
+				}
+				for (int i = 0 ; i < NBR_VALUES; i++) {
+					tmp_card_p = piles[i].cards[0];
+					state.top_of_piles[i] = tmp_card_p ? *tmp_card_p: no_card;
+				}
+
+				player_prompt_action(state, &pa);
+
+				//printf("Player action %d, from %d, to %d\n", pa.action, pa.from_index, pa.to_index);
+				switch (pa.action)
+				{
+					case ACTION_PLAY_FROM_PILE_TO_ACES:
+						tmp_card_p = get_first_card(&piles[pa.from_index]);
+						if (!tmp_card_p) break;
+						if (tmp_card_p = play_aces(tmp_card_p))
+						{
+							//failed to play this card. Put back
+							put_card_first(&piles[pa.from_index], tmp_card_p);
 						}
-
-					}
-					break;
-				case ACTION_PLAY_FROM_HAND_TO_KINGS:
-					printf("Play from hand to kings\n");
-					if (tmp_card_p = get_from_index(&piles[state.current_pile], pa.from_index))
-					{
-						if (tmp_card_p = play_kings(tmp_card_p)) {
-							printf("Failed to play to kings\n");
-							tmp_card_p = put_card_at_index(&piles[state.current_pile], tmp_card_p,  pa.from_index);
-							if (tmp_card_p)
-								printf("Failed to add back the failed play to the pile\n");
+						break;
+					case ACTION_PLAY_FROM_PILE_TO_KINGS:
+						tmp_card_p = get_first_card(&piles[pa.from_index]);
+						if (!tmp_card_p) break;
+						if (tmp_card_p = play_kings(tmp_card_p))
+						{
+							//failed to play this card. Put back
+							put_card_first(&piles[pa.from_index], tmp_card_p);
 						}
-					} else {
+						break;
+					case ACTION_PLAY_FROM_HAND_TO_ACES:
+						if (tmp_card_p = get_from_index(&piles[state.current_pile], pa.from_index))
+						{
+							if (tmp_card_p = play_aces(tmp_card_p)) {
+								tmp_card_p = put_card_at_index(&piles[state.current_pile], tmp_card_p,  pa.from_index);
+								if (tmp_card_p)
+									printf("Failed to add back the failed play to the pile\n");
+							}
 
-						printf("Unable to draw card");
-					}
-					break;
-				case ACTION_SWAP_CARDS_IN_HAND:
-					swap_indexes(&piles[state.current_pile], pa.from_index, pa.to_index);
-					break;
-				case ACTION_REORDER_HAND:
-					reorder_hand(state.hand, pa.new_hand_order);
-					break;
-				case ACTION_NONE:
-					break;
-				case ACTION_PLAY_FROM_ACES_TO_KINGS:
-				case ACTION_PLAY_FROM_KINGS_TO_ACES:
-				case ACTION_PUT_HAND_DOWN:
-					break;
-				default:
-					printf("INVALID ACTION\n");
-					exit(-1);
+						}
+						break;
+					case ACTION_PLAY_FROM_HAND_TO_KINGS:
+						printf("Play from hand to kings\n");
+						if (tmp_card_p = get_from_index(&piles[state.current_pile], pa.from_index))
+						{
+							if (tmp_card_p = play_kings(tmp_card_p)) {
+								printf("Failed to play to kings\n");
+								tmp_card_p = put_card_at_index(&piles[state.current_pile], tmp_card_p,  pa.from_index);
+								if (tmp_card_p)
+									printf("Failed to add back the failed play to the pile\n");
+							}
+						} else {
+
+							printf("Unable to draw card");
+						}
+						break;
+					case ACTION_SWAP_CARDS_IN_HAND:
+						swap_indexes(&piles[state.current_pile], pa.from_index, pa.to_index);
+						break;
+					case ACTION_REORDER_HAND:
+						reorder_hand(state.hand, pa.new_hand_order);
+						break;
+					case ACTION_NONE:
+						break;
+					case ACTION_PLAY_FROM_ACES_TO_KINGS:
+					case ACTION_PLAY_FROM_KINGS_TO_ACES:
+					case ACTION_PUT_HAND_DOWN:
+						break;
+					default:
+						printf("INVALID ACTION\n");
+						exit(-1);
+				}
 			}
 		}
+		print_results();
+		clear_game();
 	}
-	print_results();
 	return 0;
 }

@@ -1,12 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "kort.h"
 #include "player.h"
 
+static struct state oldest_state;
 static struct state last_state;
 static enum action last_action;
 static int number_of_reorders_since_last_state_change;
+static int consequent_reorders;
 
 #define MAX(a,b) (a > b ? a : b)
 #define MIN(a,b) (a < b ? a : b)
@@ -242,12 +245,17 @@ void player_prompt_action(struct state state, struct player_action *pa)
 	struct card *card_p;
 	int hand_size = calc_hand_size(state);
 
-	printf("\e[1;1H\e[2J");
-	print_state(state);
-	usleep(500000);
+	//printf("\e[1;1H\e[2J");
+	//print_state(state);
+	//usleep(100000);
 
 	// if state is changed -> play
-	if (!piles_are_equal(last_state, state)) {
+	if (consequent_reorders > 2)
+	{
+		last_action = pa->action = ACTION_PUT_HAND_DOWN;
+		number_of_reorders_since_last_state_change = 0;
+		consequent_reorders = 0;
+	} else if (!piles_are_equal(last_state, state) && !piles_are_equal(oldest_state, state) ) {
 		last_action = pa->action = ACTION_CUSTOM_2;
 		//printf("State has changed, so play\n");;
 	}
@@ -265,6 +273,7 @@ void player_prompt_action(struct state state, struct player_action *pa)
 		number_of_reorders_since_last_state_change = 0;
 	}
 
+	oldest_state = last_state;
 	last_state = state;
 
 
@@ -275,6 +284,7 @@ void player_prompt_action(struct state state, struct player_action *pa)
 		//printf("Trying to play\n");
 		if (try_play_pile(state, pa)) {
 			number_of_reorders_since_last_state_change = 0;
+			consequent_reorders=0;
 			return;
 		}
 		//printf("Failed to play");
@@ -289,6 +299,7 @@ void player_prompt_action(struct state state, struct player_action *pa)
 		pa->action = ACTION_REORDER_HAND;
 		calc_new_hand_order(state, pa->new_hand_order);
 		number_of_reorders_since_last_state_change++;
+		consequent_reorders++;
 		return;
 
 	}
