@@ -157,13 +157,6 @@ static void init_game()
 		init_pile.cards[pos2] = card_p;
 	}
 
-	/*
-	for (i = 0; i < MAX_CARDS; i++) 
-	{
-		printf("Color %d value %d\n", init_pile.cards[i]->color, init_pile.cards[i]->value);
-	}
-	*/
-
 
 	int pile_index = 0;
 	while (card_p = get_first_card(&init_pile))
@@ -188,12 +181,7 @@ static void init_game()
 		}
 	}
 
-	print_pile(&draw_pile);
-	//for (int p = 0; p < NBR_VALUES; p++)
-	//{
-		//printf("pile %d\n",p);
-		//print_pile(&piles[p]);
-	//}
+	//print_pile(&draw_pile);
 }
 
 struct card * play_kings(struct card *card_p)
@@ -230,6 +218,42 @@ struct card * play_aces(struct card *card_p)
 	return card_p;
 }
 
+static int calc_hand_size(struct ddeck *pile)
+{
+	struct card *card_p;
+	int i = 0;
+	while (i < MAX_CARDS && (card_p = pile->cards[i])) {i++;};
+	return i;
+}
+
+
+static void reorder_hand(struct ddeck *pile, int *new_hand_order)
+{
+	int order_sum = 0;
+	int expected_sum = 0;
+	int hand_count = calc_hand_size(pile);
+
+	struct ddeck replacement_pile = {0};
+
+	for (int i = 0; i < hand_count; i++)
+	{
+		order_sum += new_hand_order[i] + 1;
+		expected_sum += i + 1;
+		if (new_hand_order[i] >= MAX_CARDS)
+			return;
+		replacement_pile.cards[i] = pile->cards[new_hand_order[i]];
+	}
+
+	/* The new order must contain all indexes or it is bad */
+	if (order_sum != expected_sum) {
+		printf("New order must contain all existing indexes!\n");
+		return;
+	}
+
+	*pile = replacement_pile;
+
+}
+
 
 int main(int argc, char **argv) {
 
@@ -264,7 +288,7 @@ int main(int argc, char **argv) {
 
 			player_prompt_action(state, &pa);
 
-			printf("Player action %d, from %d, to %d\n", pa.action, pa.from_index, pa.to_index);
+			//printf("Player action %d, from %d, to %d\n", pa.action, pa.from_index, pa.to_index);
 			switch (pa.action)
 			{
 				case ACTION_PLAY_FROM_PILE_TO_ACES:
@@ -313,6 +337,9 @@ int main(int argc, char **argv) {
 					break;
 				case ACTION_SWAP_CARDS_IN_HAND:
 					swap_indexes(&piles[state.current_pile], pa.from_index, pa.to_index);
+					break;
+				case ACTION_REORDER_HAND:
+					reorder_hand(state.hand, pa.new_hand_order);
 					break;
 				case ACTION_PLAY_FROM_ACES_TO_KINGS:
 				case ACTION_PLAY_FROM_KINGS_TO_ACES:

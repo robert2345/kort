@@ -36,6 +36,7 @@ enum action {
 	ACTION_PLAY_FROM_ACES_TO_KINGS,
 	ACTION_PLAY_FROM_KINGS_TO_ACES,
 	ACTION_SWAP_CARDS_IN_HAND,
+	ACTION_REORDER_HAND,
 	ACTION_NBR_OF
 };
 
@@ -43,6 +44,7 @@ struct player_action {
 	enum action action;
 	char from_index;
 	char to_index;
+	int new_hand_order[MAX_CARDS];
 };
 
 
@@ -58,5 +60,6 @@ static char* action_to_string[ACTION_NBR_OF] =
 	[ACTION_PLAY_FROM_PILE_TO_KINGS] = "Play from top of pile to king-pile.",
 	[ACTION_PLAY_FROM_ACES_TO_KINGS] = "Move from aces to kings.",
 	[ACTION_PLAY_FROM_KINGS_TO_ACES] = "Move from kings to aces.",
-	[ACTION_SWAP_CARDS_IN_HAND] = "Swap two cards on hands to re-order it"
+	[ACTION_SWAP_CARDS_IN_HAND] = "Swap two cards on hands to re-order it",
+	[ACTION_REORDER_HAND] = "Input new order. Starting with the top card."
 };

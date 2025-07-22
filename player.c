@@ -40,7 +40,7 @@ static int calc_hand_size(struct state state)
 {
 	struct card *card_p;
 	int i = 0;
-	while (card_p = state.hand->cards[i++]) {};
+	while (card_p = state.hand->cards[i]) {i++;};
 	return i;
 }
 
@@ -90,18 +90,34 @@ static void print_piles(struct state state)
 
 }
 
-static void print_hand(struct state state)
+static void print_hand_not_reordered(struct state state, int *order, int order_count)
 {
 	struct card *card_p;
-	printf("\nHand:\n");
+	int hand_size = calc_hand_size(state);
 	int i = 0;
 	while (card_p = state.hand->cards[i])
 	{
-			printf("%d: %s%s     ", i, symbols[card_p->color], values[card_p->value]); 
-			i++;
+		bool no_print = false;
+		if (order) {
+			for (int j = 0 ; j < order_count; j++)
+			{
+				if (order[j] == i)
+					no_print = true;
+			}
+		}
+
+			if (!no_print) printf("%d: %s%s     ", i, symbols[card_p->color], values[card_p->value]); 
+		i++;
 	}
 
 	printf("\n");
+
+}
+
+static void print_hand(struct state state)
+{
+	printf("\nHand:\n");
+	print_hand_not_reordered(state, NULL, 0);
 }
 
 static void print_state(struct state state)
@@ -150,6 +166,29 @@ static int prompt_to(struct state state, int nbr_elements)
 
 }
 
+static bool prompt_new_hand_order(struct state state, int *new_hand_order)
+{
+	int hand_size = calc_hand_size(state);
+	char s[100];
+
+	for (int i = 0; i < hand_size; i++)
+	{
+		printf("Cards left to order:\n");
+		print_hand_not_reordered(state, new_hand_order, i);
+		printf("Which hand index to add to reorder list? (list currently %d long, hand size %d", i, hand_size);
+		scanf("%s", s);
+		int d= atoi(s);
+		if (d < 0 || d >= hand_size) {
+			printf("Bad index %d, max %d!\n", d, hand_size-1);
+			return false;
+		}
+		new_hand_order[i] = d;
+			
+	}
+
+	return true;
+}
+
 void player_prompt_action(struct state state, struct player_action *pa)
 {
 	struct card *card_p;
@@ -158,7 +197,6 @@ void player_prompt_action(struct state state, struct player_action *pa)
 	print_state(state);
 
 	pa->action = prompt_action();
-	printf("action %d\n", pa->action);
 
 	switch(pa->action) {
 		case ACTION_PLAY_FROM_HAND_TO_KINGS:
@@ -184,6 +222,10 @@ void player_prompt_action(struct state state, struct player_action *pa)
 		case ACTION_SWAP_CARDS_IN_HAND:
 			pa->from_index = prompt_from(state, hand_size);
 			pa->to_index = prompt_to(state, hand_size);
+			break;
+		case ACTION_REORDER_HAND:
+			if (!prompt_new_hand_order(state, pa->new_hand_order)) { pa->action = ACTION_NONE; }
+			break;
 		case ACTION_PUT_HAND_DOWN:
 			break;
 		default:
