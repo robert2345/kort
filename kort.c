@@ -395,7 +395,7 @@ int main(int argc, char **argv) {
 						}
 						break;
 					case ACTION_PLAY_FROM_HAND_TO_ACES:
-						if (pa.from_index < 3 && (tmp_card_p = get_from_index(&piles[state.current_pile], pa.from_index)))
+						if (pa.from_index < MAX_CARDS && (tmp_card_p = get_from_index(&piles[state.current_pile], pa.from_index)))
 						{
 							if (tmp_card_p = play_aces(tmp_card_p)) {
 								tmp_card_p = put_card_at_index(&piles[state.current_pile], tmp_card_p,  pa.from_index);
@@ -407,7 +407,7 @@ int main(int argc, char **argv) {
 						break;
 					case ACTION_PLAY_FROM_HAND_TO_KINGS:
 						printf("Play from hand to kings\n");
-						if (pa.from_index < 3 && (tmp_card_p = get_from_index(&piles[state.current_pile], pa.from_index)))
+						if (pa.from_index < MAX_CARDS && (tmp_card_p = get_from_index(&piles[state.current_pile], pa.from_index)))
 						{
 							if (tmp_card_p = play_kings(tmp_card_p)) {
 								printf("Failed to play to kings\n");
