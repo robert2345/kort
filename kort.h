@@ -19,9 +19,10 @@ struct ddeck {
 struct state {
 	int current_pile;
 	struct card top_of_piles[NBR_VALUES];
+	int pile_count[NBR_VALUES];
 	struct card top_of_aces[4];
 	struct card top_of_kings[4];
-	struct ddeck *hand;
+	struct ddeck hand;
 };
 
 static const struct card no_card = {.value = -1, .color = -1};
