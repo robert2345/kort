@@ -9,6 +9,7 @@
 
 #define KNRM  "\x1B[0m"
 #define KRED  "\x1B[31m"
+
 static char *symbols[4] = {
 	"♣",
 	"\x1B[31m♦\x1B[0m",
@@ -38,39 +39,39 @@ struct card_weight {
 };
 
 
-int calc_hand_size(struct state state)
+int calc_hand_size(struct state *state)
 {
 	struct card *card_p;
 	int i = 0;
-	while (card_p = state.hand->cards[i]) {i++;};
+	while (!cards_are_equal(no_card,state->hand[i])) {i++;};
 	return i;
 }
 
-void print_aces(struct state state)
+void print_aces(struct state *state)
 {
 	printf("\nAces: ");
 	for (int i = 0; i < 4; i++)
 	{
-		if (!cards_are_equal(state.top_of_aces[i], no_card))
-			printf(" %s%s ", symbols[i], values[state.top_of_aces[i].value]);
+		if (!cards_are_equal(state->top_of_aces[i], no_card))
+			printf(" %s%s ", symbols[i], values[state->top_of_aces[i].value]);
 		else 
 			printf(" %s- ", symbols[i]);
 	}
 }
 
-void print_kings(struct state state)
+void print_kings(struct state *state)
 {
 	printf("Kings: ");
 	for (int i = 0; i < 4; i++)
 	{
-		if (!cards_are_equal(state.top_of_kings[i], no_card))
-			printf(" %s%s ", symbols[i], values[state.top_of_kings[i].value]);
+		if (!cards_are_equal(state->top_of_kings[i], no_card))
+			printf(" %s%s ", symbols[i], values[state->top_of_kings[i].value]);
 		else 
 			printf(" %s- ", symbols[i]);
 	}
 }
 
-void print_piles(struct state state)
+void print_piles(struct state *state)
 {
 	
 	int i;
@@ -83,21 +84,21 @@ void print_piles(struct state state)
 	printf("\n");
 	for (i = 0; i < NBR_VALUES; i ++)
 	{
-		if (i == state.current_pile)
+		if (i == state->current_pile)
 			printf("hand    "); 
 		else
-			printf("%s%s     ", symbols[state.top_of_piles[i].color], values[state.top_of_piles[i].value]); 
+			printf("%s%s     ", symbols[state->top_of_piles[i].color], values[state->top_of_piles[i].value]); 
 
 	}
 
 }
 
-void print_hand_not_reordered(struct state state, int *order, int order_count)
+void print_hand_not_reordered(struct state *state, int *order, int order_count)
 {
 	struct card *card_p;
 	int hand_size = calc_hand_size(state);
 	int i = 0;
-	while (card_p = state.hand->cards[i])
+	while ((card_p = &state->hand[i]) && !cards_are_equal(*card_p,no_card))
 	{
 		bool no_print = false;
 		if (order) {
@@ -116,13 +117,13 @@ void print_hand_not_reordered(struct state state, int *order, int order_count)
 
 }
 
-void print_hand(struct state state)
+void print_hand(struct state *state)
 {
 	printf("\nHand:\n");
 	print_hand_not_reordered(state, NULL, 0);
 }
 
-void print_state(struct state state)
+void print_state(struct state *state)
 {
 
 	print_aces(state);
@@ -144,18 +145,18 @@ static int compare_card_weights(const void *p, const void *q) {
     return 0;
 }
 
-static void calc_card_weight(struct state state, struct card_weight *card_weight)
+static void calc_card_weight(struct state *state, struct card_weight *card_weight)
 {
 	int piles_weight = 0; // if the thing on hand is already top of other pile, downprio
 	int king_weight = 0;
 	int ace_weight = 0;
 	int weight = 0;
-	struct card *card_p = state.hand->cards[card_weight->index];
+	struct card *card_p = &state->hand[card_weight->index];
 	int color = card_p->color;
 	int value = card_p->value;
-	int king_value = state.top_of_kings[color].value;
+	int king_value = state->top_of_kings[color].value;
 	if (king_value == -1) king_value = 13;
-	int ace_value = state.top_of_aces[color].value;
+	int ace_value = state->top_of_aces[color].value;
 	if (value < king_value)
 		king_weight = (king_value - value);
 	else 
@@ -167,9 +168,9 @@ static void calc_card_weight(struct state state, struct card_weight *card_weight
 
 	for (int i = 0; i < NBR_VALUES; i ++)
 	{
-		if (i == state.current_pile) // no need to compare against ourself if we are top of hand-pile
+		if (i == state->current_pile) // no need to compare against ourself if we are top of hand-pile
 			continue;
-		if (cards_are_equal(state.top_of_piles[i], *card_p)) {
+		if (cards_are_equal(state->top_of_piles[i], *card_p)) {
 			piles_weight = 2;
 			break;
 		}
@@ -182,7 +183,7 @@ static void calc_card_weight(struct state state, struct card_weight *card_weight
 
 }
 
-void calc_new_hand_order(struct state state, int *new_hand_order)
+void calc_new_hand_order(struct state *state, int *new_hand_order)
 {
 	int hand_size = calc_hand_size(state);
 
@@ -203,28 +204,28 @@ exit:
 	free(card_weights);
 }
 	
-bool try_play_pile(struct state state, struct player_action *pa)
+bool try_play_pile(struct state *state, struct player_action *pa)
 {
 	int i;
 	for (i = 0; i < NBR_VALUES; i ++)
 	{
-		if (cards_are_equal(state.top_of_piles[i], no_card))
+		if (cards_are_equal(state->top_of_piles[i], no_card))
 			continue;
-		int color = state.top_of_piles[i].color;
-		int value = state.top_of_piles[i].value;
+		int color = state->top_of_piles[i].color;
+		int value = state->top_of_piles[i].value;
 		//if we can play to aces
-		//printf("Value %d, king %d, ace %d\n", value, state.top_of_kings[color].value, state.top_of_aces[color].value);
-		if ((cards_are_equal(state.top_of_aces[color], no_card) && value == 0) || ((state.top_of_aces[color].value + 1) == value))
+		//printf("Value %d, king %d, ace %d\n", value, state->top_of_kings[color].value, state->top_of_aces[color].value);
+		if ((cards_are_equal(state->top_of_aces[color], no_card) && value == 0) || ((state->top_of_aces[color].value + 1) == value))
 		{
-		printf("Play to ace: Value %d, king %d, ace %d\n", value, state.top_of_kings[color].value, state.top_of_aces[color].value);
+		printf("Play to ace: Value %d, king %d, ace %d\n", value, state->top_of_kings[color].value, state->top_of_aces[color].value);
 			pa->action = ACTION_PLAY_FROM_PILE_TO_ACES;
 			pa->from_index = i;
 			return true;
 		}
 		//if we can play to kings
-		if ((cards_are_equal(state.top_of_kings[color], no_card) && value == 12) || ((state.top_of_kings[color].value - 1) == value))
+		if ((cards_are_equal(state->top_of_kings[color], no_card) && value == 12) || ((state->top_of_kings[color].value - 1) == value))
 		{
-		printf("Play to king: Value %d, king %d, ace %d\n", value, state.top_of_kings[color].value, state.top_of_aces[color].value);
+		printf("Play to king: Value %d, king %d, ace %d\n", value, state->top_of_kings[color].value, state->top_of_aces[color].value);
 			pa->action = ACTION_PLAY_FROM_PILE_TO_KINGS;
 			pa->from_index = i;
 			return true;
@@ -235,24 +236,24 @@ bool try_play_pile(struct state state, struct player_action *pa)
 
 }
 
-bool try_play_hand(struct state state, struct player_action *pa)
+bool try_play_hand(struct state *state, struct player_action *pa)
 {
 	int i;
 	int hand_size = calc_hand_size(state);
 	for (i = 0; i < hand_size; i ++)
 	{
-		int color = state.hand->cards[i]->color;
-		int value = state.hand->cards[i]->value;
+		int color = state->hand[i].color;
+		int value = state->hand[i].value;
 		//if we can play to aces
-		//printf("Value %d, king %d, ace %d\n", value, state.top_of_kings[color].value, state.top_of_aces[color].value);
-		if ((cards_are_equal(state.top_of_aces[color], no_card) && value == 0) || ((state.top_of_aces[color].value + 1) == value))
+		//printf("Value %d, king %d, ace %d\n", value, state->top_of_kings[color].value, state->top_of_aces[color].value);
+		if ((cards_are_equal(state->top_of_aces[color], no_card) && value == 0) || ((state->top_of_aces[color].value + 1) == value))
 		{
 			pa->action = ACTION_PLAY_FROM_HAND_TO_ACES;
 			pa->from_index = i;
 			return true;
 		}
 		//if we can play to kings
-		if ((cards_are_equal(state.top_of_kings[color], no_card) && value == 12) || ((state.top_of_kings[color].value - 1) == value))
+		if ((cards_are_equal(state->top_of_kings[color], no_card) && value == 12) || ((state->top_of_kings[color].value - 1) == value))
 		{
 			pa->action = ACTION_PLAY_FROM_HAND_TO_KINGS;
 			pa->from_index = i;
@@ -264,11 +265,11 @@ bool try_play_hand(struct state state, struct player_action *pa)
 
 }
 
-void identify_king_ace_transfer(struct state state)
+void identify_king_ace_transfer(struct state *state)
 {
 	for (int i = 0; i < 4; i++)
 	{
-		if (state.top_of_kings[i].value == (1+state.top_of_aces[i].value)) {
+		if (state->top_of_kings[i].value == (1+state->top_of_aces[i].value)) {
 			char s[100];
 			do {
 				printf("WARNING! it is possible to move cards between aces and kings piles! Press 'o' to proceed.\n");

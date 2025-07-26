@@ -6,6 +6,8 @@
 static int runs_left = 1;
 static int successes = 0;
 static int failures = 0;
+static int max_played = 0;
+static int played_cards = 0;
 
 // starthög
 static struct ddeck init_pile;
@@ -279,6 +281,19 @@ static void reorder_hand(struct ddeck *pile, int *new_hand_order)
 	*pile = replacement_pile;
 
 }
+static int count_played_cards()
+{
+	int res = 0;
+	for (int i = 0; i < 4; i++)
+	{
+		for ( int j = 0 ; j < MAX_CARDS; j++) {
+			if (kings[i].cards[j]) res++;
+			if (aces[i].cards[j]) res++;
+		}
+	}
+	return res;
+
+}
 
 static void print_results()
 {
@@ -294,22 +309,30 @@ static void print_results()
 	printf("         You WON!\n\n");
 	successes++;
 out:
+	int played_cards_this_round = count_played_cards();
+	played_cards += played_cards_this_round;
+	max_played = played_cards_this_round > max_played ? played_cards_this_round : max_played;
 	printf("         In all you won %d times and lost %d.\n\n", successes, failures);
+	printf("         In average you managed to play %d cards. At most %d.\n\n",  played_cards/(successes+failures), max_played);
 
 	//getchar();
 }
 
 static void move_from_aces_to_kings(int color, int count)
 {
+	printf("%s\n", __func__);
 	for (int i = 0 ; i < count; i++)
 	{
 		struct card *card_p = get_first_card(&aces[color]);
 		if (!card_p)
 			break;
 		// check that there is indeed one step between the cards and that it the put succeeds
-		if ((card_p->value +1 != kings[color].cards[0]->value) || 
-		    (card_p = put_card_first(&kings[color], card_p)))
+		if (((card_p->value +1) != kings[color].cards[0]->value) || 
+				(card_p = put_card_first(&kings[color], card_p)))
+		{
 			put_card_first(&aces[color], card_p); // if something fails, put card back
+			printf("Failed to put ace on king\n");
+		}
 	}
 }
 
@@ -321,9 +344,25 @@ static void move_from_kings_to_aces(int color, int count)
 		if (!card_p)
 			break;
 		// check that there is indeed one step between the cards and that it the put succeeds
-		if ((card_p->value -1 != aces[color].cards[0]->value) || 
-		    (card_p = put_card_first(&aces[color], card_p)))
+		if (((card_p->value -1) != aces[color].cards[0]->value) || 
+				(card_p = put_card_first(&aces[color], card_p))){
 			put_card_first(&kings[color], card_p); // if something fails, put card back
+			printf("Failed to put king on ace\n");
+		}
+	}
+}
+
+static void pick_up_pile(struct state *state, int pile)
+{
+	for (int i = 0; i < MAX_CARDS; i++)
+	{
+		struct card *card_p = piles[pile].cards[i];
+		if (card_p) {
+			state->hand[i] = *card_p;
+		} else {
+			state->hand[i] = no_card;
+			break; // Leave this no_card as end marker and the rest undefined
+		}
 	}
 }
 
@@ -355,7 +394,7 @@ int main(int argc, char **argv) {
 			put_card_first(&piles[state.current_pile], card_p);
 			pa.action = ACTION_NONE;
 			while (pa.action != ACTION_PUT_HAND_DOWN) {
-				state.hand = &piles[card_p->value];
+				pick_up_pile(&state, card_p->value);
 				for (int i = 0 ; i < 4; i++) {
 					tmp_card_p = aces[i].cards[0];
 					state.top_of_aces[i] = tmp_card_p ? *tmp_card_p: no_card;
@@ -369,7 +408,7 @@ int main(int argc, char **argv) {
 					state.top_of_piles[i] = tmp_card_p ? *tmp_card_p: no_card;
 				}
 
-				player_prompt_action(state, &pa);
+				player_prompt_action(&state, &pa);
 
 				//printf("Player action %d, from %d, to %d\n", pa.action, pa.from_index, pa.to_index);
 				switch (pa.action)
@@ -406,7 +445,6 @@ int main(int argc, char **argv) {
 						}
 						break;
 					case ACTION_PLAY_FROM_HAND_TO_KINGS:
-						printf("Play from hand to kings\n");
 						if (pa.from_index < MAX_CARDS && (tmp_card_p = get_from_index(&piles[state.current_pile], pa.from_index)))
 						{
 							if (tmp_card_p = play_kings(tmp_card_p)) {
@@ -424,7 +462,7 @@ int main(int argc, char **argv) {
 						swap_indexes(&piles[state.current_pile], pa.from_index, pa.to_index);
 						break;
 					case ACTION_REORDER_HAND:
-						reorder_hand(state.hand, pa.new_hand_order);
+						reorder_hand(&piles[state.current_pile], pa.new_hand_order);
 						break;
 					case ACTION_NONE:
 						break;

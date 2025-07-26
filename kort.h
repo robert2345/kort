@@ -22,7 +22,7 @@ struct state {
 	int pile_count[NBR_VALUES];
 	struct card top_of_aces[4];
 	struct card top_of_kings[4];
-	struct ddeck hand;
+	struct card hand[MAX_CARDS]; // A number of valid cards ending with "no_card" and then undefined. Since the rest of the entries will not be cleared between actions
 };
 
 static const struct card no_card = {.value = -1, .color = -1};

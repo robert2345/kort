@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "kort.h"
 #include "player.h"
@@ -27,7 +28,7 @@ static int prompt_action()
 
 }
 
-static int prompt_from(struct state state, int nbr_elements)
+static int prompt_from(struct state *state, int nbr_elements)
 {
 	char s[100];
 	printf("Which index to get card from, 0 to %d?\n", nbr_elements-1);
@@ -37,7 +38,7 @@ static int prompt_from(struct state state, int nbr_elements)
 
 }
 
-static int prompt_to(struct state state, int nbr_elements)
+static int prompt_to(struct state *state, int nbr_elements)
 {
 	char s[100];
 	printf("Which index to put card in, 0 to %d?\n", nbr_elements-1);
@@ -47,7 +48,7 @@ static int prompt_to(struct state state, int nbr_elements)
 
 }
 
-static bool prompt_new_hand_order(struct state state, int *new_hand_order)
+static bool prompt_new_hand_order(struct state *state, int *new_hand_order)
 {
 	int hand_size = calc_hand_size(state);
 	char s[100];
@@ -70,7 +71,7 @@ static bool prompt_new_hand_order(struct state state, int *new_hand_order)
 	return true;
 }
 
-static int prompt_count(struct state state, int max_count)
+static int prompt_count(struct state *state, int max_count)
 {
 	char s[100];
 	printf("How many cards to move: 0 to %d?\n", max_count);
@@ -79,7 +80,7 @@ static int prompt_count(struct state state, int max_count)
 	return i;
 }
 
-void player_prompt_action(struct state state, struct player_action *pa)
+void player_prompt_action(struct state *state, struct player_action *pa)
 {
 	struct card *card_p;
 	int hand_size = calc_hand_size(state);
@@ -139,11 +140,11 @@ void player_prompt_action(struct state state, struct player_action *pa)
 			break;
 		case ACTION_PLAY_FROM_ACES_TO_KINGS:
 			pa->from_index = prompt_from(state, 4);
-			pa->count = prompt_count(state, state.top_of_aces[pa->from_index].value+1);
+			pa->count = prompt_count(state, state->top_of_aces[pa->from_index].value+1);
 			break;
 		case ACTION_PLAY_FROM_KINGS_TO_ACES:
 			pa->from_index = prompt_from(state, 4);
-			int top_value = state.top_of_kings[pa->from_index].value;
+			int top_value = state->top_of_kings[pa->from_index].value;
 			if (top_value == -1) top_value = NBR_VALUES;
 			pa->count = prompt_count(state, NBR_VALUES-top_value);
 			break;
