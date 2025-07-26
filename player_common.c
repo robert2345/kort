@@ -216,6 +216,7 @@ bool try_play_pile(struct state state, struct player_action *pa)
 		//printf("Value %d, king %d, ace %d\n", value, state.top_of_kings[color].value, state.top_of_aces[color].value);
 		if ((cards_are_equal(state.top_of_aces[color], no_card) && value == 0) || ((state.top_of_aces[color].value + 1) == value))
 		{
+		printf("Play to ace: Value %d, king %d, ace %d\n", value, state.top_of_kings[color].value, state.top_of_aces[color].value);
 			pa->action = ACTION_PLAY_FROM_PILE_TO_ACES;
 			pa->from_index = i;
 			return true;
@@ -223,6 +224,7 @@ bool try_play_pile(struct state state, struct player_action *pa)
 		//if we can play to kings
 		if ((cards_are_equal(state.top_of_kings[color], no_card) && value == 12) || ((state.top_of_kings[color].value - 1) == value))
 		{
+		printf("Play to king: Value %d, king %d, ace %d\n", value, state.top_of_kings[color].value, state.top_of_aces[color].value);
 			pa->action = ACTION_PLAY_FROM_PILE_TO_KINGS;
 			pa->from_index = i;
 			return true;
@@ -242,7 +244,7 @@ bool try_play_hand(struct state state, struct player_action *pa)
 		int color = state.hand->cards[i]->color;
 		int value = state.hand->cards[i]->value;
 		//if we can play to aces
-		printf("Value %d, king %d, ace %d\n", value, state.top_of_kings[color].value, state.top_of_aces[color].value);
+		//printf("Value %d, king %d, ace %d\n", value, state.top_of_kings[color].value, state.top_of_aces[color].value);
 		if ((cards_are_equal(state.top_of_aces[color], no_card) && value == 0) || ((state.top_of_aces[color].value + 1) == value))
 		{
 			pa->action = ACTION_PLAY_FROM_HAND_TO_ACES;

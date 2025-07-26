@@ -20,16 +20,20 @@ bool state_is_equal(struct state s0, struct state s1)
 		if (i == s0.current_pile)
 			continue;
 		if (!cards_are_equal(s0.top_of_piles[i], s1.top_of_piles[i])) {
-			//printf("Piles are not equal\n");
+			printf("Piles are not equal\n");
 			return false;
 		}
 	}
 
 	// check hand
-	if (s0.current_pile != s1.current_pile)
+	if (s0.current_pile != s1.current_pile) {
+		printf ("state has switched piles\n");
 		return false;
-	if (calc_hand_size(s0) != calc_hand_size(s1))
+	}
+	if (calc_hand_size(s0) != calc_hand_size(s1)) {
+		printf ("hand size hs changed\n");
 		return false;
+	}
 	
 	printf("States are equal\n");
 	return true;
@@ -89,6 +93,7 @@ static bool find_dream_card(struct state state, int color)
 	{
 		int last_value = -2;
 		int streak_start = 0;
+		int streak;
 		int current_hand_cards = 0;
 		int best_hand_cards = 1000;
 		int best_index = 0;
@@ -107,16 +112,33 @@ static bool find_dream_card(struct state state, int color)
 
 				streak_start = i;
 				current_hand_cards = 0;
+				streak = 1;
 			}
+			else if (candidates[i].value == (last_value)) 
+			{
+				// convoluted way to say that if the card is both on pile and hand it should be considered on pile
+				if ((candidates[i].source != SOURCE_HAND && candidates[i-1].source == SOURCE_HAND)
+				||(candidates[i].source == SOURCE_HAND && candidates[i-1].source != SOURCE_HAND))
+					current_hand_cards--;
+
+				// also don't consider the streak longer because the same card appears twice.
+			}
+			else 
+				streak++;
+
 			last_value = candidates[i].value;
 			if (candidates[i].source == SOURCE_HAND)
 				current_hand_cards++;
 
 		}
 
+		if (best_index >= 0)
+			return candidates[best_index].value;
+		else
+			return -1;
+
 
 	}
-
 }
 
 static bool move_kings_and_aces(struct state state, struct player_action *pa)
@@ -124,6 +146,7 @@ static bool move_kings_and_aces(struct state state, struct player_action *pa)
 	for (int i = 0; i < 4; i++)
 	{
 		if (state.top_of_kings[i].value == (1+state.top_of_aces[i].value)) {
+			char dream_value = 0; 
 			char s[100];
 			do {
 				printf("WARNING! it is possible to move cards between aces and kings piles! Press 'o' to proceed.\n");
@@ -131,10 +154,19 @@ static bool move_kings_and_aces(struct state state, struct player_action *pa)
 			} while (s[0] != 'o');
 
 			// find the best card in top of pile
-			if (find_dream_card(state, i)) {
-
-				return true;
-			}
+			dream_value = find_dream_card(state, i);
+				if (dream_value != -1) {
+					int cards_to_move = state.top_of_aces[i].value - dream_value;
+					if (cards_to_move < 0)
+						pa->action = ACTION_PLAY_FROM_ACES_TO_KINGS;
+					if (cards_to_move > 0)
+						pa->action = ACTION_PLAY_FROM_KINGS_TO_ACES;
+					else
+						pa->action = ACTION_NONE;
+					pa->count = abs(cards_to_move);
+					printf("Moving %d cards\n", pa->count);
+					return true;
+				}
 		}
 	}
 	return false;
@@ -154,13 +186,15 @@ void player_prompt_action(struct state state, struct player_action *pa)
 	// if cards can be moved between kings/aces, we should make use of this to play one or several cards from the piles.
 	if (last_action != ACTION_PLAY_FROM_ACES_TO_KINGS &&
 	    last_action != ACTION_PLAY_FROM_KINGS_TO_ACES &&
-	    move_kings_and_aces)
+	    move_kings_and_aces(state, pa)) {
 		last_action = pa->action;
+		printf("Set the action for move\n");
+	}
 
 	// if state is changed -> play
 	if (!state_is_equal(last_state, state)) {
 		last_action = pa->action = ACTION_CUSTOM_2;
-		//printf("State has changed, so play\n");;
+		printf("State has changed, so play\n");;
 	}
 	else if (last_action == ACTION_CUSTOM_2 ){
 		last_action = pa->action = ACTION_CUSTOM_1;
@@ -176,14 +210,14 @@ void player_prompt_action(struct state state, struct player_action *pa)
 	if (pa->action == ACTION_CUSTOM_2)
 	{
 		//Custom automatic play action. Player defined.
-		//printf("Trying to play\n");
+		printf("Trying to play\n");
 		if (try_play_pile(state, pa)) {
 			return;
 		}
 		if (try_play_hand(state, pa)) {
 			return;
 		}
-		//printf("Failed to play");
+		printf("Failed to play");
 		// fall back to reorder
 		last_action = pa->action = ACTION_CUSTOM_1;
 	}
@@ -192,7 +226,7 @@ void player_prompt_action(struct state state, struct player_action *pa)
 	{
 		//Custom automatic reorder action. Player defined.
 
-		//printf("Trying to reorder\n");
+		printf("Trying to reorder\n");
 		pa->action = ACTION_REORDER_HAND;
 		calc_new_hand_order(state, pa->new_hand_order);
 		return;
