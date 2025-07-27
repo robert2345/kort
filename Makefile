@@ -1,4 +1,4 @@
-all: human ai tests
+all: human ai test
 
 human:  kort.o player.o player_common.o
 	gcc $^ -o kort
@@ -6,10 +6,11 @@ human:  kort.o player.o player_common.o
 ai: kort.o computer_player.o player_common.o
 	gcc $^ -o ai_kort
 
-tests:
-	$(MAKE) test
+test:
+	$(MAKE) -C ./test
 
 clean:
 	rm *.o
 	rm *.exe
+	$(MAKE) -C ./test clean
 

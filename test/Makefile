@@ -1,7 +1,6 @@
-phony: 
-	./test
+phoney: test
 
-all: *.c ../*.c
+test: *.c ../computer_player.c ../player_common.c
 	cc $^ -o test
 	./test
 
