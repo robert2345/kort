@@ -211,6 +211,8 @@ bool try_play_pile(struct state *state, struct player_action *pa)
 	{
 		if (cards_are_equal(state->top_of_piles[i], no_card))
 			continue;
+		if (i == state->current_pile)
+			continue;
 		int color = state->top_of_piles[i].color;
 		int value = state->top_of_piles[i].value;
 		//if we can play to aces
