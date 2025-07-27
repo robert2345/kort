@@ -53,7 +53,10 @@ struct player_action {
 };
 
 
-bool cards_are_equal(struct card a, struct card b);
+static bool cards_are_equal(struct card a, struct card b)
+{
+	return a.value == b.value && a.color == b.color;
+}
 
 static char* action_to_string[ACTION_NBR_OF] = 
 {

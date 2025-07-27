@@ -36,11 +36,6 @@ struct card *get_last_card(struct ddeck *pile)
 	return card_p;
 }
 
-bool cards_are_equal(struct card a, struct card b)
-{
-	return a.value == b.value && a.color == b.color;
-}
-
 struct card *get_first_card(struct ddeck *pile)
 {
 	struct card * card_p = pile->cards[0];
