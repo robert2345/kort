@@ -96,7 +96,7 @@ static int find_dream_card(struct state *state, int color)
 		qsort(candidates,nbr_candidates, sizeof(*candidates), compare_dream_candidates);
 		for (int i = 0; i < (nbr_candidates); i++)
 		{
-			if (candidates[i].value != (last_value +1)) 
+			if (i == (nbr_candidates-1) || candidates[i].value != (last_value +1)) 
 			{
 				//check if new best
 				if (streak > best_streak || (streak == best_streak && best_hand_cards > current_hand_cards)){

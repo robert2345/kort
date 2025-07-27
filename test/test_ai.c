@@ -42,11 +42,29 @@ static int test_play_ace_pile()
 	CHECK (pa.action == ACTION_PLAY_FROM_PILE_TO_ACES && pa.from_index == 1)
 }
 
+// if we can play between aces and kings, set it up for playing max number of pile-tops
+static int test_wise_play_direction()
+{
+	struct state state = default_state;
+	struct player_action pa = {};
+
+	state.top_of_piles[0] = (struct card){.value = 6, .color = 1};
+	state.top_of_piles[1] = (struct card){.value = 8, .color = 1};
+	state.top_of_piles[2] = (struct card){.value = 9, .color = 1};
+	state.top_of_piles[3] = (struct card){.value = 10, .color = 1};
+	state.top_of_aces[1] = (struct card){.value = 6, .color = 1};
+	state.top_of_kings[1] = (struct card){.value = 7, .color = 1};
+	player_prompt_action(&state, &pa);
+	// We expect the 7 to be moved to the 6 on aces, so that 8,9 and 10 can be played on top
+	CHECK (pa.action == ACTION_PLAY_FROM_KINGS_TO_ACES && pa.from_index == 1 && pa.count == 1);
+}
+
 int main(int argc, char **argv)
 {
 	int res = 0;
 	res |= test_play_ace();
 	res |= test_play_ace_pile();
+ res |= test_wise_play_direction();
 
 	if (res)
 		fprintf(stderr, "Tests failed!\n");
