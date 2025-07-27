@@ -30,10 +30,23 @@ static int test_play_ace()
 	CHECK (pa.action == ACTION_PLAY_FROM_HAND_TO_ACES && pa.from_index == 0)
 }
 
+// Something in a pile takes precedence over something on hand
+static int test_play_ace_pile()
+{
+	struct state state = default_state;
+	struct player_action pa = {};
+
+	state.top_of_piles[1] = (struct card){.value = 0, .color = 1};
+	state.hand[0] = (struct card){.value = 0, .color = 0};
+	player_prompt_action(&state, &pa);
+	CHECK (pa.action == ACTION_PLAY_FROM_PILE_TO_ACES && pa.from_index == 1)
+}
+
 int main(int argc, char **argv)
 {
 	int res = 0;
 	res |= test_play_ace();
+	res |= test_play_ace_pile();
 
 	if (res)
 		fprintf(stderr, "Tests failed!\n");
