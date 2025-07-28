@@ -1,6 +1,20 @@
 #pragma once
 #include "kort.h"
 
+enum src {
+	SOURCE_NONE,
+	SOURCE_PILE,
+	SOURCE_HAND,
+};
+
+struct dream_candidate {
+	enum src source;
+	char value;
+	char source_idx;
+	char nbr_unlocks;
+};
+
+
 /* utilities */
 int calc_hand_size(struct state *state);
 
@@ -25,5 +39,20 @@ void calc_new_hand_order(struct state *state, int *new_hand_order);
 bool try_play_pile(struct state *state, struct player_action *pa);
 
 bool try_play_hand(struct state *state, struct player_action *pa);
+
+static int compare_dream_candidates(const void *p, const void *q) {
+    struct dream_candidate dc0 = *(const struct dream_candidate *)p;
+    struct dream_candidate dc1 = *(const struct dream_candidate *)q;
+
+    if (dc0.value > dc1.value)
+	    return 1;
+    if (dc0.value < dc1.value)
+	    return -1;
+    if (dc0.nbr_unlocks > dc1.nbr_unlocks)
+	    return 1;
+    if (dc0.nbr_unlocks < dc1.nbr_unlocks)
+	    return -1;
+    return 0;
+}
 
 

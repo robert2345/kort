@@ -35,29 +35,6 @@ bool state_is_equal(struct state *s0, struct state *s1)
 	return true;
 }
 
-enum src {
-	SOURCE_NONE,
-	SOURCE_PILE,
-	SOURCE_HAND,
-};
-
-struct dream_candidate {
-	enum src source;
-	char value;
-};
-
-
-static int compare_dream_candidates(const void *p, const void *q) {
-    struct dream_candidate dc0 = *(const struct dream_candidate *)p;
-    struct dream_candidate dc1 = *(const struct dream_candidate *)q;
-
-    if (dc0.value > dc1.value)
-	    return 1;
-    if (dc0.value < dc1.value)
-	    return -1;
-    return 0;
-}
-
 static int find_dream_card(struct state *state, int color)
 {
 	int nbr_candidates = 0;

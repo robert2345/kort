@@ -204,6 +204,111 @@ exit:
 	free(card_weights);
 }
 	
+//try_play_2
+//
+//find all candidates
+//for each candidate, find how much it unlocks
+//order candidates
+//play first
+
+static int calc_unlock(struct state state)
+{
+	int unlocks = 0;
+	//go through all piles except current
+	// if not "card"
+	for (int i = 0; i < NBR_VALUES; i++)
+	{
+		int value;
+		int color;
+		if (i == state->current_pile) 
+			continue;
+		if (cards_are_equal(state->piles[i], no_card))
+			continue;
+
+		value =state->top_of_piles[i].value;
+		color =state->top_of_piles[i].color;
+		
+		if (value == (state.top_of_kings[color]-1))
+		{
+			struct state new_state = state;
+			new_state.top_of_kings[color] = state->top_of_piles[i];
+			new_state->top_of_piles[i] = no_card;
+			unlocks = MAX(unlocks, new_unlocks + calc_unlock(state));
+		}
+		if (value == (state.top_of_aces[color]+1))
+		{
+			struct state new_state = state;
+			new_state.top_of_aces[color] = state->top_of_piles[i];
+			new_state->top_of_piles[i] = no_card;
+			unlocks = MAX(unlocks, new_unlocks + calc_unlock(state));
+		}
+	}
+	
+	for (int i = 0; i < MAX_CARDS; i++)
+	{
+		int value;
+		int color;
+		int new_unlocks = 0;
+		if (cards_are_equal(state->hand[i], no_card))
+			continue;
+
+		value =state->hand[i].value;
+		color =state->hand[i].color;
+		if (value == (state.top_of_kings[color]-1))
+		{
+			struct state new_state = state;
+			new_state.top_of_kings[color] = state->hand[i];
+			new_state->hand[i] = no_card;
+			unlocks = MAX(unlocks, new_unlocks + calc_unlock(state));
+		}
+		if (value == (state.top_of_aces[color]+1))
+		{
+			struct state new_state = state;
+			new_state.top_of_aces[color] = state->hand[i];
+			new_state->hand[i] = no_card;
+			unlocks = MAX(unlocks, new_unlocks + calc_unlock(state));
+		}
+	
+	}
+	//if card can be played, play it in a new state, unlocks of this play is calculated and kept if max
+
+	return unlocks;
+}
+
+bool try_play(struct state *state, struct player_action *pa)
+{
+	int nbr_candidates = 0;
+	// check all top of piles except current_pile to see if there is a card that can be played
+	// if there are several, choose.
+	struct dream_candidate candidates[2*NBR_VALUES];
+	int hand_size = calc_hand_size(state);
+	for (int i = 0; i < NBR_VALUES; i++)
+	{
+		if (i == state->current_pile) 
+			continue;
+		
+		candidates[nbr_candidates].value = state->top_of_piles[i].value;
+		candidates[nbr_candidates].source = SOURCE_PILE;
+		candidates[nbr_candidates].source_idx = i;
+		nbr_candidates++;
+	}
+	for (int i = 0; i < hand_size; i++)
+	{
+			candidates[nbr_candidates].value = state->hand[i].value;
+			candidates[nbr_candidates].source = SOURCE_HAND;
+			candidates[nbr_candidates].source_idx = i;
+			nbr_candidates++;
+			struct state new_state = state;
+			new_state->hand[i] = no_card;
+			new_state->hand[i] = no_card;
+			candidates[nbr_candidates].nbr_unlocks = calc_unlock(new_state);
+
+	}
+
+	calc_unlock(state, &candidates[nbr_candidates]);
+
+}
+
 bool try_play_pile(struct state *state, struct player_action *pa)
 {
 	int i;
