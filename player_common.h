@@ -11,12 +11,13 @@ struct dream_candidate {
 	enum src source;
 	char value;
 	char source_idx;
-	char nbr_unlocks;
+	char unlocks;
+	bool dream_play_is_to_ace;
 };
 
 
 /* utilities */
-int calc_hand_size(struct state *state);
+int calc_hand_size(const struct state *state);
 
 void identify_king_ace_transfer(struct state *state);
 	
@@ -48,11 +49,12 @@ static int compare_dream_candidates(const void *p, const void *q) {
 	    return 1;
     if (dc0.value < dc1.value)
 	    return -1;
-    if (dc0.nbr_unlocks > dc1.nbr_unlocks)
+    if (dc0.unlocks > dc1.unlocks)
 	    return 1;
-    if (dc0.nbr_unlocks < dc1.nbr_unlocks)
+    if (dc0.unlocks < dc1.unlocks)
 	    return -1;
     return 0;
 }
 
+bool try_play(struct state *state, struct player_action *pa);
 

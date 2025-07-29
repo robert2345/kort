@@ -181,10 +181,7 @@ void player_prompt_action(struct state *state, struct player_action *pa)
 	if (pa->action == ACTION_CUSTOM_2)
 	{
 		//Custom automatic play action. Player defined.
-		if (try_play_pile(state, pa)) {
-			return;
-		}
-		if (try_play_hand(state, pa)) {
+		if (try_play(state, pa)) {
 			return;
 		}
 		// fall back to reorder

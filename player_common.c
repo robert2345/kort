@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -34,12 +35,12 @@ static char *values[NBR_VALUES] = {
 };
 
 struct card_weight {
-       int index;
-       int weight;
+	int index;
+	int weight;
 };
 
 
-int calc_hand_size(struct state *state)
+int calc_hand_size(const struct state *state)
 {
 	struct card *card_p;
 	int i = 0;
@@ -73,7 +74,7 @@ void print_kings(struct state *state)
 
 void print_piles(struct state *state)
 {
-	
+
 	int i;
 	printf("Piles:\n");
 	for (i = 0; i < NBR_VALUES; i ++)
@@ -109,7 +110,7 @@ void print_hand_not_reordered(struct state *state, int *order, int order_count)
 			}
 		}
 
-			if (!no_print) printf("%d: %s%s     ", i, symbols[card_p->color], values[card_p->value]); 
+		if (!no_print) printf("%d: %s%s     ", i, symbols[card_p->color], values[card_p->value]); 
 		i++;
 	}
 
@@ -135,14 +136,14 @@ void print_state(struct state *state)
 }
 
 static int compare_card_weights(const void *p, const void *q) {
-    struct card_weight card_one = *(const struct card_weight *)p;
-    struct card_weight card_two = *(const struct card_weight *)q;
+	struct card_weight card_one = *(const struct card_weight *)p;
+	struct card_weight card_two = *(const struct card_weight *)q;
 
-    if (card_one.weight > card_two.weight)
-	    return 1;
-    if (card_one.weight < card_two.weight)
-	    return -1;
-    return 0;
+	if (card_one.weight > card_two.weight)
+		return 1;
+	if (card_one.weight < card_two.weight)
+		return -1;
+	return 0;
 }
 
 static void calc_card_weight(struct state *state, struct card_weight *card_weight)
@@ -175,7 +176,7 @@ static void calc_card_weight(struct state *state, struct card_weight *card_weigh
 			break;
 		}
 	}
-		
+
 
 	//printf("card value: %d, king value %d, ace value %d, king_weight %d, ace_weight %d\n", value, king_value, ace_value, king_weight, ace_weight);
 	; 
@@ -194,7 +195,7 @@ void calc_new_hand_order(struct state *state, int *new_hand_order)
 		card_weights[i].index = i;
 		calc_card_weight(state, &card_weights[i]);
 		//printf("Card %d weight %d\n", card_weights[i].index,  card_weights[i].weight); 
-			
+
 	}
 	qsort(card_weights, hand_size, sizeof(*card_weights), compare_card_weights);
 	for (int i = 0; i < hand_size; i++)
@@ -203,173 +204,163 @@ void calc_new_hand_order(struct state *state, int *new_hand_order)
 exit:
 	free(card_weights);
 }
-	
-//try_play_2
-//
-//find all candidates
-//for each candidate, find how much it unlocks
-//order candidates
-//play first
 
-static int calc_unlock(struct state state)
+static void print_dream_card(struct dream_candidate *dc, int level)
 {
-	int unlocks = 0;
-	//go through all piles except current
-	// if not "card"
+	printf(" L%d: val %d, src %d, idx %d, unlocks %d, to ace %d\n", level,  dc->value, dc->source, dc->source_idx, dc->unlocks, dc->dream_play_is_to_ace);
+
+}
+
+static int calc_unlock(const struct state *state, struct dream_candidate *dc)
+{
+	int unlocks = -1;
+	int hand_size = calc_hand_size(state);
+	int unlock_ret;
+	bool found = false;
+	static int level = 0;
 	for (int i = 0; i < NBR_VALUES; i++)
 	{
 		int value;
 		int color;
 		if (i == state->current_pile) 
 			continue;
-		if (cards_are_equal(state->piles[i], no_card))
+		if (cards_are_equal(state->top_of_piles[i], no_card))
 			continue;
 
 		value =state->top_of_piles[i].value;
 		color =state->top_of_piles[i].color;
-		
-		if (value == (state.top_of_kings[color]-1))
+
+		if (value == (state->top_of_kings[color].value-1) || (value == 12 && (-1 == state->top_of_kings[color].value)))
 		{
-			struct state new_state = state;
+			struct state new_state = *state;
 			new_state.top_of_kings[color] = state->top_of_piles[i];
-			new_state->top_of_piles[i] = no_card;
-			unlocks = MAX(unlocks, new_unlocks + calc_unlock(state));
+			new_state.top_of_piles[i] = no_card;
+			level++;
+			unlock_ret = 1+calc_unlock(&new_state, NULL);
+			level--;
+			if (unlock_ret > unlocks) {
+				unlocks = unlock_ret;
+				found = true;
+				if (dc) {
+					dc->value = value;
+					dc->source_idx = i;
+					dc->source = SOURCE_PILE;
+					dc->dream_play_is_to_ace = false;
+					dc->unlocks = unlocks = unlock_ret;
+				}
+			}
+
 		}
-		if (value == (state.top_of_aces[color]+1))
+		if (value == (state->top_of_aces[color].value+1))
 		{
-			struct state new_state = state;
+			struct state new_state = *state;
 			new_state.top_of_aces[color] = state->top_of_piles[i];
-			new_state->top_of_piles[i] = no_card;
-			unlocks = MAX(unlocks, new_unlocks + calc_unlock(state));
+			new_state.top_of_piles[i] = no_card;
+			level++;
+			unlock_ret = 1+calc_unlock(&new_state, NULL);
+			level--;
+			if (unlock_ret > unlocks) {
+				unlocks = unlock_ret;
+				found = true;
+				if (dc) {
+					dc->value = value;
+					dc->source_idx = i;
+					dc->source = SOURCE_PILE;
+					dc->dream_play_is_to_ace = true;
+					dc->unlocks = unlocks = unlock_ret;
+				}
+			}
 		}
 	}
-	
+
 	for (int i = 0; i < MAX_CARDS; i++)
 	{
 		int value;
 		int color;
-		int new_unlocks = 0;
 		if (cards_are_equal(state->hand[i], no_card))
-			continue;
+			break;
 
 		value =state->hand[i].value;
 		color =state->hand[i].color;
-		if (value == (state.top_of_kings[color]-1))
+		if (value == (state->top_of_kings[color].value-1) || (value == 12 && (-1 == state->top_of_kings[color].value)))
 		{
-			struct state new_state = state;
-			new_state.top_of_kings[color] = state->hand[i];
-			new_state->hand[i] = no_card;
-			unlocks = MAX(unlocks, new_unlocks + calc_unlock(state));
-		}
-		if (value == (state.top_of_aces[color]+1))
-		{
-			struct state new_state = state;
-			new_state.top_of_aces[color] = state->hand[i];
-			new_state->hand[i] = no_card;
-			unlocks = MAX(unlocks, new_unlocks + calc_unlock(state));
-		}
-	
-	}
-	//if card can be played, play it in a new state, unlocks of this play is calculated and kept if max
+			//printf("hand %i can be played to king\n", i);
 
-	return unlocks;
+			struct state new_state = *state;
+			new_state.top_of_kings[color] = state->hand[i];
+			new_state.hand[i] = new_state.hand[hand_size-1];
+			new_state.hand[hand_size-1] = no_card;
+			level++;
+			unlock_ret = calc_unlock(&new_state, NULL);
+			level--;
+			if (unlock_ret > unlocks) {
+				unlocks = unlock_ret;
+				found = true;
+				if (dc) {
+					dc->value = value;
+					dc->source_idx = i;
+					dc->source = SOURCE_HAND;
+					dc->unlocks = unlocks = unlock_ret;
+					dc->dream_play_is_to_ace = false;
+				}
+			}
+		}
+		if (value == (state->top_of_aces[color].value+1))
+		{
+			struct state new_state = *state;
+			//printf("hand %i can be played to ace\n", i);
+			new_state.top_of_aces[color] = state->hand[i];
+			new_state.hand[i] = new_state.hand[hand_size-1];
+			new_state.hand[hand_size-1] = no_card;
+			level++;
+			unlock_ret = calc_unlock(&new_state, NULL);
+			level--;
+			if (unlock_ret > unlocks){
+				unlocks = unlock_ret;
+				found = true;
+				if (dc) {
+					dc->value = value;
+					dc->source_idx = i;
+					dc->source = SOURCE_HAND;
+					dc->unlocks = unlocks = unlock_ret;
+					dc->dream_play_is_to_ace = true;
+				}
+			}
+		}
+
+	}
+
+	/*
+	if (found) {
+		if (dc) print_dream_card(dc, level);
+		else printf("L%d, unlocks %d\n", level,unlocks);
+	}
+	*/
+	return (unlocks == -1) ? 0:unlocks;
 }
 
 bool try_play(struct state *state, struct player_action *pa)
 {
-	int nbr_candidates = 0;
-	// check all top of piles except current_pile to see if there is a card that can be played
-	// if there are several, choose.
-	struct dream_candidate candidates[2*NBR_VALUES];
-	int hand_size = calc_hand_size(state);
-	for (int i = 0; i < NBR_VALUES; i++)
-	{
-		if (i == state->current_pile) 
-			continue;
-		
-		candidates[nbr_candidates].value = state->top_of_piles[i].value;
-		candidates[nbr_candidates].source = SOURCE_PILE;
-		candidates[nbr_candidates].source_idx = i;
-		nbr_candidates++;
-	}
-	for (int i = 0; i < hand_size; i++)
-	{
-			candidates[nbr_candidates].value = state->hand[i].value;
-			candidates[nbr_candidates].source = SOURCE_HAND;
-			candidates[nbr_candidates].source_idx = i;
-			nbr_candidates++;
-			struct state new_state = state;
-			new_state->hand[i] = no_card;
-			new_state->hand[i] = no_card;
-			candidates[nbr_candidates].nbr_unlocks = calc_unlock(new_state);
-
-	}
-
-	calc_unlock(state, &candidates[nbr_candidates]);
-
-}
-
-bool try_play_pile(struct state *state, struct player_action *pa)
-{
-	int i;
-	for (i = 0; i < NBR_VALUES; i ++)
-	{
-		if (cards_are_equal(state->top_of_piles[i], no_card))
-			continue;
-		if (i == state->current_pile)
-			continue;
-		int color = state->top_of_piles[i].color;
-		int value = state->top_of_piles[i].value;
-		//if we can play to aces
-		//printf("Value %d, king %d, ace %d\n", value, state->top_of_kings[color].value, state->top_of_aces[color].value);
-		if ((cards_are_equal(state->top_of_aces[color], no_card) && value == 0) || ((state->top_of_aces[color].value + 1) == value))
-		{
-		printf("Play to ace: Value %d, king %d, ace %d\n", value, state->top_of_kings[color].value, state->top_of_aces[color].value);
+	struct dream_candidate dc = {};
+	calc_unlock(state, &dc);
+	pa->from_index = dc.source_idx;
+	if (dc.source == SOURCE_PILE){
+		if (dc.dream_play_is_to_ace)
 			pa->action = ACTION_PLAY_FROM_PILE_TO_ACES;
-			pa->from_index = i;
-			return true;
-		}
-		//if we can play to kings
-		if ((cards_are_equal(state->top_of_kings[color], no_card) && value == 12) || ((state->top_of_kings[color].value - 1) == value))
-		{
-		printf("Play to king: Value %d, king %d, ace %d\n", value, state->top_of_kings[color].value, state->top_of_aces[color].value);
+		else
 			pa->action = ACTION_PLAY_FROM_PILE_TO_KINGS;
-			pa->from_index = i;
-			return true;
-		}
+		return true;
 	}
-	pa->action = ACTION_NONE;
-	return false;
 
-}
-
-bool try_play_hand(struct state *state, struct player_action *pa)
-{
-	int i;
-	int hand_size = calc_hand_size(state);
-	for (i = 0; i < hand_size; i ++)
-	{
-		int color = state->hand[i].color;
-		int value = state->hand[i].value;
-		//if we can play to aces
-		//printf("Value %d, king %d, ace %d\n", value, state->top_of_kings[color].value, state->top_of_aces[color].value);
-		if ((cards_are_equal(state->top_of_aces[color], no_card) && value == 0) || ((state->top_of_aces[color].value + 1) == value))
-		{
+	if (dc.source == SOURCE_HAND){
+		if (dc.dream_play_is_to_ace)
 			pa->action = ACTION_PLAY_FROM_HAND_TO_ACES;
-			pa->from_index = i;
-			return true;
-		}
-		//if we can play to kings
-		if ((cards_are_equal(state->top_of_kings[color], no_card) && value == 12) || ((state->top_of_kings[color].value - 1) == value))
-		{
+		else
 			pa->action = ACTION_PLAY_FROM_HAND_TO_KINGS;
-			pa->from_index = i;
-			return true;
-		}
+		return true;
 	}
-	pa->action = ACTION_NONE;
-	return false;
 
+	return false;
 }
 
 void identify_king_ace_transfer(struct state *state)

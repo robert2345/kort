@@ -91,6 +91,14 @@ void player_prompt_action(struct state *state, struct player_action *pa)
 	pa->action = prompt_action();
 	printf("Action %d\n", pa->action);
 
+	if (pa->action == ACTION_CUSTOM_2)
+	{
+		//Custom automatic play action. Player defined.
+		if (try_play(state, pa))
+			return;
+		pa->action = ACTION_CUSTOM_1;
+	}
+
 	if (pa->action == ACTION_CUSTOM_1)
 	{
 		//Custom automatic reorder action. Player defined.
@@ -101,17 +109,6 @@ void player_prompt_action(struct state *state, struct player_action *pa)
 		return;
 	}
 
-	if (pa->action == ACTION_CUSTOM_2)
-	{
-		//Custom automatic play action. Player defined.
-		if (try_play_pile(state, pa))
-			return;
-		// try to sneak in something by moving cards between aces and kings here
-		if (try_play_hand(state, pa))
-			return;
-
-		return;
-	}
 
 	switch(pa->action) {
 		case ACTION_PLAY_FROM_HAND_TO_KINGS:

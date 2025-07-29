@@ -161,6 +161,7 @@ static void init_game()
 	}
 
 
+
 	int pile_index = 0;
 	while (card_p = get_first_card(&init_pile))
 	{
@@ -184,7 +185,6 @@ static void init_game()
 		}
 	}
 
-	//print_pile(&draw_pile);
 }
 
 static void clear_game()
