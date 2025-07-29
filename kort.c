@@ -40,6 +40,8 @@ struct card *get_first_card(struct ddeck *pile)
 {
 	struct card * card_p = pile->cards[0];
 	int i = 1;
+	if (!card_p)
+		return card_p;
 	for (i = 1; i<MAX_CARDS; i ++) {
 		pile->cards[i-1] = pile->cards[i];
 		if (!pile->cards[i])
@@ -316,14 +318,17 @@ out:
 
 static void move_from_aces_to_kings(int color, int count)
 {
-	printf("%s\n", __func__);
+	//printf("Move color %d from aces to kings, count %d\n", color, count);
 	for (int i = 0 ; i < count; i++)
 	{
+		int king_value = kings[color].cards[0]? kings[color].cards[0]->value:-1;
 		struct card *card_p = get_first_card(&aces[color]);
-		if (!card_p)
+		if (!card_p) {
+			printf("%s: No more cards to move!!", __func__);
 			break;
+		}
 		// check that there is indeed one step between the cards and that it the put succeeds
-		if (((card_p->value +1) != kings[color].cards[0]->value) || 
+		if (((card_p->value +1) != king_value) || 
 				(card_p = put_card_first(&kings[color], card_p)))
 		{
 			put_card_first(&aces[color], card_p); // if something fails, put card back
@@ -334,14 +339,19 @@ static void move_from_aces_to_kings(int color, int count)
 
 static void move_from_kings_to_aces(int color, int count)
 {
+	//printf("Move color %d from kings to aces, count %d\n", color, count);
 	for (int i = 0 ; i < count; i++)
 	{
+		int ace_value = aces[color].cards[0]? aces[color].cards[0]->value:-1;
 		struct card *card_p = get_first_card(&kings[color]);
-		if (!card_p)
+		if (!card_p) {
+			printf("%s: No more cards to move!!", __func__);
 			break;
+		}
 		// check that there is indeed one step between the cards and that it the put succeeds
-		if (((card_p->value -1) != aces[color].cards[0]->value) || 
-				(card_p = put_card_first(&aces[color], card_p))){
+		if (((card_p->value -1) != ace_value) || 
+				(card_p = put_card_first(&aces[color], card_p)))
+		{
 			put_card_first(&kings[color], card_p); // if something fails, put card back
 			printf("Failed to put king on ace\n");
 		}

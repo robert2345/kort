@@ -149,7 +149,7 @@ void player_prompt_action(struct state *state, struct player_action *pa)
 	int hand_size = calc_hand_size(state);
 
 	//printf("\e[1;1H\e[2J");
-	print_state(state);
+	//print_state(state);
 	//usleep(100000);
 
 	// if cards can be moved between kings/aces, we should make use of this to play one or several cards from the piles.
@@ -158,12 +158,14 @@ void player_prompt_action(struct state *state, struct player_action *pa)
 	    move_kings_and_aces(state, pa)) {
 		last_action = pa->action;
 		last_state = *state;
+		print_state(state);
 		return;
 	}
 
 	if (last_action == ACTION_PLAY_FROM_ACES_TO_KINGS ||
-	    last_action == ACTION_PLAY_FROM_KINGS_TO_ACES)
+	    last_action == ACTION_PLAY_FROM_KINGS_TO_ACES) {
 		last_action = pa->action = ACTION_CUSTOM_2;
+	}
 	else if (!state_is_equal(&last_state, state)) {
 		last_action = pa->action = ACTION_CUSTOM_2;
 	}

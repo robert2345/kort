@@ -4,7 +4,7 @@ human:  kort.o player.o player_common.o
 	gcc $^ -o kort
 
 ai: kort.o computer_player.o player_common.o
-	gcc $^ -o ai_kort
+	gcc -g $^ -o ai_kort
 
 test:
 	$(MAKE) -C ./test
