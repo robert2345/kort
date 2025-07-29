@@ -158,7 +158,6 @@ void player_prompt_action(struct state *state, struct player_action *pa)
 	    move_kings_and_aces(state, pa)) {
 		last_action = pa->action;
 		last_state = *state;
-		print_state(state);
 		return;
 	}
 

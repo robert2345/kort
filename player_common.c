@@ -1,6 +1,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "player_common.h"
 #include "kort.h"
@@ -139,67 +140,132 @@ static int compare_card_weights(const void *p, const void *q) {
 	struct card_weight card_one = *(const struct card_weight *)p;
 	struct card_weight card_two = *(const struct card_weight *)q;
 
-	if (card_one.weight > card_two.weight)
-		return 1;
 	if (card_one.weight < card_two.weight)
+		return 1;
+	if (card_one.weight > card_two.weight)
 		return -1;
 	return 0;
 }
 
-static void calc_card_weight(struct state *state, struct card_weight *card_weight)
+static bool play(struct state *state, bool to_aces, struct card card)
 {
-	int piles_weight = 0; // if the thing on hand is already top of other pile, downprio
-	int king_weight = 0;
-	int ace_weight = 0;
-	int weight = 0;
-	struct card *card_p = &state->hand[card_weight->index];
-	int color = card_p->color;
-	int value = card_p->value;
-	int king_value = state->top_of_kings[color].value;
-	if (king_value == -1) king_value = 13;
-	int ace_value = state->top_of_aces[color].value;
-	if (value < king_value)
-		king_weight = (king_value - value);
-	else 
-		king_weight = 14;
-	if (value > ace_value)
-		ace_weight = (value - ace_value);
-	else
-		ace_weight = 14;
 
-	for (int i = 0; i < NBR_VALUES; i ++)
-	{
-		if (i == state->current_pile) // no need to compare against ourself if we are top of hand-pile
-			continue;
-		if (cards_are_equal(state->top_of_piles[i], *card_p)) {
-			piles_weight = 2;
-			break;
+	char color = card.color;
+	if (!to_aces) {
+		if ((state->top_of_kings[color].value>0) && (((card.value == (NBR_VALUES-1)) && (state->top_of_kings[color].value == -1)) || state->top_of_kings[color].value == card.value+1)) {
+			state->top_of_kings[color].value = card.value;
+			//printf("Play %d:%d to kings\n",card.color, card.value);
+			return true;
+		}
+	} else {
+		if (state->top_of_aces[color].value != (NBR_VALUES-1) && state->top_of_kings[color].value == card.value-1) {
+			state->top_of_aces[color].value = card.value;
+			//printf("Play %d:%d to aces\n",card.color, card.value);
+			return true;
 		}
 	}
+	return false;
 
+}
 
-	//printf("card value: %d, king value %d, ace value %d, king_weight %d, ace_weight %d\n", value, king_value, ace_value, king_weight, ace_weight);
-	; 
-	card_weight->weight = king_weight+ace_weight + 3*MIN(king_weight, ace_weight) + piles_weight;
+static bool play_piles(struct state *state, bool to_aces)
+{
+	bool played = false;
+	for (int j = 0 ; j < NBR_VALUES; j++)
+	{
+		if (j == state->current_pile)
+			continue;
+		// is it correct to remove the card from the pile when pretending to play? It could be re-used on aces if we have played it on kings for instance.
+		if (play(state, to_aces, state->top_of_piles[j]))
+		{
+			state->top_of_piles[j] = no_card;
+			//printf("Played a card from pile, idx %d\n",j);
+			played = true;
+		}
 
+	}
+	return played;
+}
+
+static bool play_for_weight(struct state *state, bool to_aces, struct card_weight *card_weights, int hand_size, int *weight_add)
+{	
+	bool played = false;
+	for (int i = 0; i < hand_size; i++)
+	{
+		// if it can be played, "play it" and increase_weight
+		if (play(state, to_aces, state->hand[card_weights[i].index]))
+		{
+			played = true;
+			//for now, zero out the card from hand, it messes with the hand size calc so not great.
+			state->hand[card_weights[i].index] = no_card;
+			card_weights[i].weight+=*weight_add;
+			//printf("Card %d added %d now weight %d\n", card_weights[i].index, *weight_add, card_weights[i].weight); 
+			while(play_piles(state, to_aces));
+			/* not great because there is no clear distinction
+			 * between stuff that can be played right away or stuff
+			 * that can be played only because previously played
+			 * stuff from hand/pile */
+			i = 0;
+		}
+	}
+	*weight_add-=1;
+	return played;
 }
 
 void calc_new_hand_order(struct state *state, int *new_hand_order)
 {
 	int hand_size = calc_hand_size(state);
+	struct state new_state = *state;
 
 	struct card_weight * card_weights = (struct card_weight*)calloc(sizeof(struct card_weight),hand_size);
-
 	for (int i = 0; i < hand_size; i++)
 	{
 		card_weights[i].index = i;
-		calc_card_weight(state, &card_weights[i]);
 		//printf("Card %d weight %d\n", card_weights[i].index,  card_weights[i].weight); 
 
 	}
+
+
+	//lägg till ett kort på alla kings and aces
+	//weight_add-=2
+	//för varje kort på handen, om det går att spela och ge dem weight_add i vikt, ge alla som går att spela på detta weight_add+1 i vikt etc.
+	
+	for (int to_aces = 0; to_aces < 2; to_aces++)
+	{
+		memcpy(new_state.hand,state->hand, hand_size*sizeof(struct card));
+		int weight_add = 13*4;
+		for (int j = 0 ; j < NBR_VALUES; j++)
+		{
+			weight_add -=2;
+			//printf("ONE MORE LAYER!, To aces? %d\n", to_aces);
+			for (int i = 0; i < 4; i ++){
+				bool inc = false;
+				if (new_state.top_of_kings[i].value > 0) {
+					new_state.top_of_kings[i].value--;
+					inc = true;
+				} else if (new_state.top_of_kings[i].value == -1)
+				{
+					new_state.top_of_kings[i].value = (NBR_VALUES-1);
+					inc = true;
+				}
+
+				if (new_state.top_of_aces[i].value != (NBR_VALUES-1)) {
+					new_state.top_of_aces[i].value++;
+					inc = true;
+				}
+				if (!inc)
+					break; // done
+			}
+			while(play_piles(&new_state, to_aces));
+
+			while(play_for_weight(&new_state, to_aces, card_weights, hand_size, &weight_add));
+		}
+	}
 	qsort(card_weights, hand_size, sizeof(*card_weights), compare_card_weights);
-	for (int i = 0; i < hand_size; i++)
+	for (int i = 0; i < hand_size; i++) {
+		//printf("weight %d\n", card_weights[i].weight);
 		new_hand_order[i] = card_weights[i].index;
+	}
 
 exit:
 	free(card_weights);
