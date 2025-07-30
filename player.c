@@ -104,7 +104,8 @@ void player_prompt_action(struct state *state, struct player_action *pa)
 		//Custom automatic reorder action. Player defined.
 
 		pa->action = ACTION_REORDER_HAND;
-		calc_new_hand_order(state, pa->new_hand_order);
+
+		calc_new_hand_order(state, NULL, pa->new_hand_order);
 
 		return;
 	}

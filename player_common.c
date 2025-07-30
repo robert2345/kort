@@ -168,7 +168,7 @@ static bool play(struct state *state, bool to_aces, struct card card)
 
 }
 
-static bool play_piles(struct state *state, bool to_aces)
+static bool play_piles(struct state *state, struct card piles[NBR_VALUES][MAX_CARDS], bool to_aces)
 {
 	bool played = false;
 	for (int j = 0 ; j < NBR_VALUES; j++)
@@ -178,8 +178,19 @@ static bool play_piles(struct state *state, bool to_aces)
 		// is it correct to remove the card from the pile when pretending to play? It could be re-used on aces if we have played it on kings for instance.
 		if (play(state, to_aces, state->top_of_piles[j]))
 		{
-			state->top_of_piles[j] = no_card;
-			//printf("Played a card from pile, idx %d\n",j);
+			if (piles) {
+				state->top_of_piles[j] = piles[j][1];
+				for (int k = 1; k < MAX_CARDS; k++) {
+					piles[j][k-1] = piles[j][k];
+					if(cards_are_equal(no_card, piles[j][k]))
+						break;
+				}
+				//printf("Played a card SUPER pile, idx %d\n",j);
+
+			} else {
+				state->top_of_piles[j] = no_card;
+				//printf("Played a card from pile, idx %d\n",j);
+			}
 			played = true;
 		}
 
@@ -187,7 +198,7 @@ static bool play_piles(struct state *state, bool to_aces)
 	return played;
 }
 
-static bool play_for_weight(struct state *state, bool to_aces, struct card_weight *card_weights, int hand_size, int *weight_add)
+static bool play_for_weight(struct state *state, struct card piles[NBR_VALUES][MAX_CARDS], bool to_aces, struct card_weight *card_weights, int hand_size, int *weight_add)
 {	
 	bool played = false;
 	for (int i = 0; i < hand_size; i++)
@@ -200,7 +211,7 @@ static bool play_for_weight(struct state *state, bool to_aces, struct card_weigh
 			state->hand[card_weights[i].index] = no_card;
 			card_weights[i].weight+=*weight_add;
 			//printf("Card %d added %d now weight %d\n", card_weights[i].index, *weight_add, card_weights[i].weight); 
-			while(play_piles(state, to_aces));
+			while(play_piles(state, piles, to_aces));
 			/* not great because there is no clear distinction
 			 * between stuff that can be played right away or stuff
 			 * that can be played only because previously played
@@ -212,7 +223,7 @@ static bool play_for_weight(struct state *state, bool to_aces, struct card_weigh
 	return played;
 }
 
-void calc_new_hand_order(struct state *state, int *new_hand_order)
+void calc_new_hand_order(struct state *state, struct card piles[NBR_VALUES][MAX_CARDS], int *new_hand_order)
 {
 	int hand_size = calc_hand_size(state);
 	struct state new_state = *state;
@@ -256,9 +267,9 @@ void calc_new_hand_order(struct state *state, int *new_hand_order)
 				if (!inc)
 					break; // done
 			}
-			while(play_piles(&new_state, to_aces));
+			while(play_piles(&new_state, piles, to_aces));
 
-			while(play_for_weight(&new_state, to_aces, card_weights, hand_size, &weight_add));
+			while(play_for_weight(&new_state, piles,to_aces, card_weights, hand_size, &weight_add));
 		}
 	}
 	qsort(card_weights, hand_size, sizeof(*card_weights), compare_card_weights);

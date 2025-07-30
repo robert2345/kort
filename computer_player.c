@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
 
 #include "kort.h"
 #include "player_common.h"
@@ -8,6 +9,7 @@
 
 static struct state last_state;
 static enum action last_action;
+static struct card piles[NBR_VALUES][MAX_CARDS];
 
 // Does not check the order of the hand, just its's contents and the top of
 // other piles. I.e. no cards have been played!
@@ -143,6 +145,25 @@ static bool move_kings_and_aces(struct state *state, struct player_action *pa)
 	return false;
 }
 
+static void store_hand(struct state *state)
+{
+	int i = 0;
+	int hand_size = calc_hand_size(state);
+	for (; i < hand_size; i++)
+	{
+		piles[state->current_pile][i] = state->hand[i];
+
+	}
+	piles[state->current_pile][i] = no_card;
+}
+
+static void validate_piles(struct state *state)
+{
+	for (int i = 0; i < NBR_VALUES; i++) 
+		if (!cards_are_equal(no_card,piles[i][0]) && cards_are_equal(state->top_of_piles[i],piles[i][0]))
+			fprintf(stderr, "PILES ARE NOT IN SYNC WITH GAME!!!!");
+}
+
 void player_prompt_action(struct state *state, struct player_action *pa)
 {
 	struct card *card_p;
@@ -173,6 +194,7 @@ void player_prompt_action(struct state *state, struct player_action *pa)
 
 	}
 	else {
+		store_hand(state);
 		last_action = pa->action = ACTION_PUT_HAND_DOWN;
 	}
 
@@ -192,8 +214,11 @@ void player_prompt_action(struct state *state, struct player_action *pa)
 	if (pa->action == ACTION_CUSTOM_1)
 	{
 		//Custom automatic reorder action. Player defined.
+		struct card (*piles_copy)[MAX_CARDS] = malloc(sizeof(piles));
+		memcpy(piles_copy, piles, sizeof(piles));
 		pa->action = ACTION_REORDER_HAND;
-		calc_new_hand_order(state, pa->new_hand_order);
+		calc_new_hand_order(state, piles_copy, pa->new_hand_order);
+		free(piles_copy);
 		return;
 
 	}

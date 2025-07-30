@@ -35,7 +35,7 @@ void print_hand(struct state *state);
 void print_state(struct state *state);
 
 /* automation */
-void calc_new_hand_order(struct state *state, int *new_hand_order);
+void calc_new_hand_order(struct state *state, struct card piles[NBR_VALUES][MAX_CARDS], int *new_hand_order);
 	
 bool try_play_pile(struct state *state, struct player_action *pa);
 
