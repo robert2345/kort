@@ -203,12 +203,16 @@ void player_prompt_action(struct state *state, struct player_action *pa)
 
 	if (pa->action == ACTION_CUSTOM_2)
 	{
+		struct card (*piles_copy)[MAX_CARDS] = malloc(sizeof(piles));
+		memcpy(piles_copy, piles, sizeof(piles));
 		//Custom automatic play action. Player defined.
-		if (try_play(state, pa)) {
+		if (try_play(state, piles_copy, pa)) {
+			free(piles_copy);
 			return;
 		}
 		// fall back to reorder
 		last_action = pa->action = ACTION_CUSTOM_1;
+		free(piles_copy);
 	}
 
 	if (pa->action == ACTION_CUSTOM_1)

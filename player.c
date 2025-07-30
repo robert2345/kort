@@ -94,7 +94,7 @@ void player_prompt_action(struct state *state, struct player_action *pa)
 	if (pa->action == ACTION_CUSTOM_2)
 	{
 		//Custom automatic play action. Player defined.
-		if (try_play(state, pa))
+		if (try_play(state, NULL, pa))
 			return;
 		pa->action = ACTION_CUSTOM_1;
 	}

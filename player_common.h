@@ -37,10 +37,6 @@ void print_state(struct state *state);
 /* automation */
 void calc_new_hand_order(struct state *state, struct card piles[NBR_VALUES][MAX_CARDS], int *new_hand_order);
 	
-bool try_play_pile(struct state *state, struct player_action *pa);
-
-bool try_play_hand(struct state *state, struct player_action *pa);
-
 static int compare_dream_candidates(const void *p, const void *q) {
     struct dream_candidate dc0 = *(const struct dream_candidate *)p;
     struct dream_candidate dc1 = *(const struct dream_candidate *)q;
@@ -56,5 +52,5 @@ static int compare_dream_candidates(const void *p, const void *q) {
     return 0;
 }
 
-bool try_play(struct state *state, struct player_action *pa);
+bool try_play(struct state *state, struct card piles[NBR_VALUES][MAX_CARDS], struct player_action *pa);
 
