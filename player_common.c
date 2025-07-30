@@ -288,7 +288,7 @@ static void print_dream_card(struct dream_candidate *dc, int level)
 
 }
 
-static int calc_unlock(const struct state *state, struct dream_candidate *dc)
+static int calc_unlock(const struct state *state, struct card piles[NBR_VALUES][MAX_CARDS], struct dream_candidate *dc)
 {
 	int unlocks = -1;
 	int hand_size = calc_hand_size(state);
@@ -299,6 +299,7 @@ static int calc_unlock(const struct state *state, struct dream_candidate *dc)
 	{
 		int value;
 		int color;
+		int unlock_inc = 2;
 		if (i == state->current_pile) 
 			continue;
 		if (cards_are_equal(state->top_of_piles[i], no_card))
@@ -311,9 +312,23 @@ static int calc_unlock(const struct state *state, struct dream_candidate *dc)
 		{
 			struct state new_state = *state;
 			new_state.top_of_kings[color] = state->top_of_piles[i];
-			new_state.top_of_piles[i] = no_card;
+			if (piles) {
+				new_state.top_of_piles[i] = piles[i][1];
+				if (cards_are_equal(no_card, piles[i][1]))
+					unlock_inc = 1;
+				for (int j = 1; j < MAX_CARDS; j++) {
+					piles[i][j-1] = piles[i][j];
+					if(cards_are_equal(no_card, piles[i][j]))
+						break;
+				}
+				//printf("Played a card SUPER pile, idx %d\n",j);
+
+			} else {
+				new_state.top_of_piles[i] = no_card;
+				//printf("Played a card from pile, idx %d\n",j);
+			}
 			level++;
-			unlock_ret = 1+calc_unlock(&new_state, NULL);
+			unlock_ret = unlock_inc+calc_unlock(&new_state, piles,NULL);
 			level--;
 			if (unlock_ret > unlocks) {
 				unlocks = unlock_ret;
@@ -332,9 +347,23 @@ static int calc_unlock(const struct state *state, struct dream_candidate *dc)
 		{
 			struct state new_state = *state;
 			new_state.top_of_aces[color] = state->top_of_piles[i];
-			new_state.top_of_piles[i] = no_card;
+			if (piles) {
+				new_state.top_of_piles[i] = piles[i][1];
+				if (cards_are_equal(no_card, piles[i][1]))
+						unlock_inc = 1;
+				for (int j = 1; j < MAX_CARDS; j++) {
+					piles[i][j-1] = piles[i][j];
+					if(cards_are_equal(no_card, piles[i][j]))
+						break;
+				}
+				//printf("Played a card SUPER pile, idx %d\n",j);
+
+			} else {
+				new_state.top_of_piles[i] = no_card;
+				//printf("Played a card from pile, idx %d\n",j);
+			}
 			level++;
-			unlock_ret = 1+calc_unlock(&new_state, NULL);
+			unlock_ret = unlock_inc+calc_unlock(&new_state, piles, NULL);
 			level--;
 			if (unlock_ret > unlocks) {
 				unlocks = unlock_ret;
@@ -368,7 +397,7 @@ static int calc_unlock(const struct state *state, struct dream_candidate *dc)
 			new_state.hand[i] = new_state.hand[hand_size-1];
 			new_state.hand[hand_size-1] = no_card;
 			level++;
-			unlock_ret = calc_unlock(&new_state, NULL);
+			unlock_ret = calc_unlock(&new_state, piles, NULL);
 			level--;
 			if (unlock_ret > unlocks) {
 				unlocks = unlock_ret;
@@ -390,7 +419,7 @@ static int calc_unlock(const struct state *state, struct dream_candidate *dc)
 			new_state.hand[i] = new_state.hand[hand_size-1];
 			new_state.hand[hand_size-1] = no_card;
 			level++;
-			unlock_ret = calc_unlock(&new_state, NULL);
+			unlock_ret = calc_unlock(&new_state, piles, NULL);
 			level--;
 			if (unlock_ret > unlocks){
 				unlocks = unlock_ret;
@@ -416,10 +445,10 @@ static int calc_unlock(const struct state *state, struct dream_candidate *dc)
 	return (unlocks == -1) ? 0:unlocks;
 }
 
-bool try_play(struct state *state, struct player_action *pa)
+bool try_play(struct state *state, struct card piles[NBR_VALUES][MAX_CARDS], struct player_action *pa)
 {
 	struct dream_candidate dc = {};
-	calc_unlock(state, &dc);
+	calc_unlock(state, piles, &dc);
 	pa->from_index = dc.source_idx;
 	if (dc.source == SOURCE_PILE){
 		if (dc.dream_play_is_to_ace)
